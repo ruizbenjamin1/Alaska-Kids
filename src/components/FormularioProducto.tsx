@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { BUCKET, parsearPrecio, urlPublica, type Producto } from "@/lib/types";
+import { enviarProductos, quitarDeMeta } from "@/app/meta/sincronizar";
 
 const MAX_FOTOS = 10; // límite de un carrusel de Instagram
 
@@ -186,6 +187,10 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
         await supabase.storage.from(BUCKET).remove(borradas.map((b) => b.storage_path));
       }
 
+      // 5. Mandarlo al catálogo de Meta (si no está conectado, queda pendiente)
+      setEstado("Enviando a Meta…");
+      await enviarProductos([productoId!]).catch(() => null);
+
       router.replace("/");
       router.refresh();
     } catch (err) {
@@ -206,6 +211,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
     setEstado("Eliminando…");
     const supabase = createClient();
     const rutas = producto.producto_fotos.map((f) => f.storage_path);
+    await quitarDeMeta(producto.id).catch(() => null);
     const { error } = await supabase.from("productos").delete().eq("id", producto.id);
     if (error) {
       setError(`No se pudo eliminar. ${error.message}`);

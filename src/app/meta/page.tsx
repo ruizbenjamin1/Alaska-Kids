@@ -1,7 +1,9 @@
 import Panel from "@/components/Panel";
 import { appConfigurada, descifrar, graph, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
+import { actualizarLotes } from "@/lib/catalogo";
 import { cambiarCatalogo, desconectar, elegirCatalogo } from "./acciones";
+import { enviarPendientes, guardarAjustes } from "./sincronizar";
 
 export const dynamic = "force-dynamic";
 
@@ -20,10 +22,7 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
   const { error: errorUrl } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: conexion }, { data: estados }] = await Promise.all([
-    supabase.from("meta_conexion").select("*").eq("id", 1).maybeSingle<Conexion>(),
-    supabase.from("productos").select("meta_estado"),
-  ]);
+  const { data: conexion } = await supabase.from("meta_conexion").select("*").eq("id", 1).maybeSingle<Conexion>();
 
   const appOk = appConfigurada();
   let token: string | null = null;
@@ -45,13 +44,23 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
     }
   }
 
+  const conectado = Boolean(conexion?.catalogo_id && !problema);
+
+  // Revisa cómo terminaron los envíos anteriores antes de contar
+  if (conectado && token && conexion?.catalogo_id) {
+    await actualizarLotes(supabase, { token, catalogoId: conexion.catalogo_id }).catch(() => null);
+  }
+  const [{ data: estados }, { data: conError }, { data: ajustes }] = await Promise.all([
+    supabase.from("productos").select("meta_estado"),
+    supabase.from("productos").select("id, nombre, meta_error").eq("meta_estado", "error").limit(20),
+    supabase.from("ajustes").select("whatsapp, marca").eq("id", 1).maybeSingle(),
+  ]);
+
   const venceEn = conexion?.token_expira_en ? new Date(conexion.token_expira_en) : null;
   const diasRestantes = venceEn ? Math.ceil((venceEn.getTime() - Date.now()) / 86_400_000) : null;
 
-  const cuenta = { pendiente: 0, sincronizado: 0, error: 0 };
+  const cuenta = { pendiente: 0, enviando: 0, sincronizado: 0, error: 0 };
   for (const p of estados ?? []) cuenta[p.meta_estado as keyof typeof cuenta]++;
-
-  const conectado = Boolean(conexion?.catalogo_id && !problema);
 
   return (
     <Panel>
@@ -226,9 +235,10 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
         <section className="mt-4 rounded-2xl border border-borde bg-papel p-5">
           <h2 className="font-semibold">Productos</h2>
           <p className="mb-4 text-sm text-tinta-suave">Cómo están los productos respecto del catálogo de Meta.</p>
-          <dl className="grid grid-cols-3 gap-3 text-center">
+          <dl className="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
             {[
               { k: "pendiente", label: "Pendientes", color: "text-tinta" },
+              { k: "enviando", label: "En camino", color: "text-acento" },
               { k: "sincronizado", label: "En Meta", color: "text-ok" },
               { k: "error", label: "Con error", color: "text-peligro" },
             ].map(({ k, label, color }) => (
@@ -238,11 +248,66 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
               </div>
             ))}
           </dl>
-          {!conectado && cuenta.pendiente > 0 && (
+          {cuenta.enviando > 0 && (
+            <p className="mt-3 text-xs text-tinta-suave">
+              {cuenta.enviando} en camino: Meta los está procesando. Recargá en un rato para ver el resultado.
+            </p>
+          )}
+          {!conectado && cuenta.pendiente + cuenta.error > 0 && (
             <p className="mt-3 text-xs text-tinta-suave">
               Los pendientes se van a enviar a Meta cuando la conexión esté lista.
             </p>
           )}
+          {conectado && cuenta.pendiente + cuenta.error > 0 && (
+            <form action={enviarPendientes} className="mt-4">
+              <button className="boton">Enviar pendientes ({cuenta.pendiente + cuenta.error})</button>
+            </form>
+          )}
+
+          {(conError ?? []).length > 0 && (
+            <div className="mt-5 border-t border-borde pt-4">
+              <h3 className="mb-2 text-sm font-semibold">Productos con error</h3>
+              <ul className="space-y-2">
+                {conError!.map((p) => (
+                  <li key={p.id} className="rounded-xl bg-peligro-suave px-3 py-2 text-sm">
+                    <a href={`/productos/${p.id}`} className="font-medium text-tinta hover:underline">
+                      {p.nombre}
+                    </a>
+                    <span className="block text-xs text-peligro">{p.meta_error}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
+
+        {/* ───── Datos del negocio ───── */}
+        <section className="mt-4 rounded-2xl border border-borde bg-papel p-5">
+          <h2 className="font-semibold">Datos del negocio</h2>
+          <p className="mb-4 text-sm text-tinta-suave">
+            Cada producto en Meta lleva a su página pública, que tiene un botón para consultar por WhatsApp.
+          </p>
+          <form action={guardarAjustes} className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="whatsapp" className="etiqueta">WhatsApp del local</label>
+              <input
+                id="whatsapp"
+                name="whatsapp"
+                inputMode="numeric"
+                defaultValue={ajustes?.whatsapp ?? ""}
+                placeholder="5493811234567"
+                className="campo"
+              />
+              <span className="mt-1 block text-xs text-tinta-suave">Con 549 + característica, sin 0 ni 15.</span>
+            </div>
+            <div>
+              <label htmlFor="marca" className="etiqueta">Marca</label>
+              <input id="marca" name="marca" defaultValue={ajustes?.marca ?? "Alaska Kids"} className="campo" />
+            </div>
+            <div className="sm:col-span-2">
+              <button className="boton-secundario">Guardar datos</button>
+            </div>
+          </form>
         </section>
       </main>
     </Panel>

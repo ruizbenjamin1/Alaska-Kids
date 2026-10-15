@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatearPrecio, urlPublica, type Producto } from "@/lib/types";
+import { enviarProductos } from "@/app/meta/sincronizar";
 
 export default function TarjetaProducto({ producto }: { producto: Producto }) {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
       alert("No se pudo actualizar. Probá de nuevo.");
       return;
     }
+    await enviarProductos([producto.id]).catch(() => null);
     router.refresh();
   }
 
@@ -49,6 +51,11 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
           {cantFotos > 1 && (
             <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
               {cantFotos} fotos
+            </span>
+          )}
+          {producto.meta_estado === "error" && (
+            <span className="absolute bottom-2 left-2 rounded-full bg-peligro px-2 py-0.5 text-xs font-semibold text-white">
+              Error en Meta
             </span>
           )}
           {!disponible && (

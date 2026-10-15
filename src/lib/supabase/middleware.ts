@@ -28,6 +28,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const enLogin = request.nextUrl.pathname.startsWith("/login");
+  // Páginas públicas de producto: las ve cualquiera (es el link que usa Meta)
+  const publica = request.nextUrl.pathname.startsWith("/p/");
+  if (publica) return response;
 
   if (!user && !enLogin) {
     const url = request.nextUrl.clone();
