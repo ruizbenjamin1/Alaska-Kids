@@ -40,4 +40,4 @@ src/lib/types.ts                         tipos, formato de precio, URL pública 
 
 - `productos`: cada producto. `meta_estado` (`pendiente` / `sincronizado` / `error`) se usa en la etapa 2. Un trigger lo vuelve a `pendiente` cada vez que cambia el nombre, la descripción, el precio, los talles o la disponibilidad.
 - `producto_fotos`: las fotos de cada producto. `orden = 0` es la foto principal. Si se borra el producto, se borran sus fotos en cascada.
-- Bucket `productos`: es público para lectura, porque Meta necesita URLs públicas. Solo los usuarios logueados pueden subir o borrar fotos.
+- Bucket `productos`: es público para lectura, porque Meta necesita URLs públicas. Solo los usuarios logueados pueden subir o borrar fotos..
