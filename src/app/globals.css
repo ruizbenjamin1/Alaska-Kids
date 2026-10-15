@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --fondo: #f7f4ef;
+  --papel: #ffffff;
+  --tinta: #1d2733;
+  --tinta-suave: #5e6b78;
+  --borde: #e4ddd2;
+  --acento: #2f5d8a;
+  --acento-hover: #244a6f;
+  --acento-suave: #e6eef6;
+  --ok: #2f7a4f;
+  --ok-suave: #e3f2e9;
+  --peligro: #b2412e;
+  --peligro-suave: #fbe9e5;
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-papel: var(--papel);
+  --color-tinta: var(--tinta);
+  --color-tinta-suave: var(--tinta-suave);
+  --color-borde: var(--borde);
+  --color-acento: var(--acento);
+  --color-acento-hover: var(--acento-hover);
+  --color-acento-suave: var(--acento-suave);
+  --color-ok: var(--ok);
+  --color-ok-suave: var(--ok-suave);
+  --color-peligro: var(--peligro);
+  --color-peligro-suave: var(--peligro-suave);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--tinta);
+  font-family: var(--font-sans);
+}
+
+.campo {
+  @apply w-full rounded-xl border border-borde bg-papel px-3.5 py-2.5 text-base text-tinta outline-none transition placeholder:text-tinta-suave/60 focus:border-acento focus:ring-4 focus:ring-acento/15;
+}
+
+.etiqueta {
+  @apply mb-1.5 block text-sm font-medium text-tinta;
+}
+
+.boton {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-acento px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-acento-hover disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.boton-secundario {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-borde bg-papel px-4 py-2.5 text-sm font-medium text-tinta transition hover:bg-fondo disabled:opacity-60;
+}
