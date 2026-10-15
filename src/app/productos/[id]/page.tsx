@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import Encabezado from "@/components/Encabezado";
+import Panel from "@/components/Panel";
 import FormularioProducto from "@/components/FormularioProducto";
 import { createClient } from "@/lib/supabase/server";
 import type { Producto } from "@/lib/types";
@@ -19,12 +19,11 @@ export default async function EditarProducto({ params }: { params: Promise<{ id:
   if (!data) notFound();
 
   return (
-    <>
-      <Encabezado />
+    <Panel>
       <main className="mx-auto max-w-2xl px-4 pb-16 pt-6">
         <h1 className="mb-5 text-2xl font-bold tracking-tight">Editar producto</h1>
         <FormularioProducto producto={data as Producto} />
       </main>
-    </>
+    </Panel>
   );
 }
