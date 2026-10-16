@@ -58,15 +58,32 @@ export async function graph<T>(ruta: string, token: string, params: Record<strin
 }
 
 export type Catalogo = { id: string; name: string; product_count?: number };
-export type Negocio = { id: string; name: string; owned_product_catalogs?: { data: Catalogo[] } };
+export type Negocio = {
+  id: string;
+  name: string;
+  owned_product_catalogs?: { data: Catalogo[] };
+  client_product_catalogs?: { data: Catalogo[] };
+};
 
-/** Negocios a los que el usuario dio acceso, con sus catálogos. */
+/** Catálogos (propios y compartidos) de los negocios a los que el usuario dio acceso. */
 export async function listarCatalogos(token: string) {
   const r = await graph<{ data: Negocio[] }>("me/businesses", token, {
-    fields: "id,name,owned_product_catalogs{id,name,product_count}",
+    fields:
+      "id,name,owned_product_catalogs{id,name,product_count},client_product_catalogs{id,name,product_count}",
     limit: "50",
   });
+  const vistos = new Set<string>();
   return r.data.flatMap((n) =>
-    (n.owned_product_catalogs?.data ?? []).map((c) => ({ ...c, negocioId: n.id, negocioNombre: n.name })),
+    [...(n.owned_product_catalogs?.data ?? []), ...(n.client_product_catalogs?.data ?? [])]
+      .filter((c) => !vistos.has(c.id) && vistos.add(c.id))
+      .map((c) => ({ ...c, negocioId: n.id, negocioNombre: n.name })),
   );
+}
+
+/** Busca un catálogo por su ID (sirve para comprobar que el permiso alcanza para usarlo). */
+export async function buscarCatalogo(token: string, id: string) {
+  const c = await graph<Catalogo & { business?: { id: string; name: string } }>(id, token, {
+    fields: "id,name,product_count,business{id,name}",
+  });
+  return { ...c, negocioId: c.business?.id ?? null, negocioNombre: c.business?.name ?? null };
 }

@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { GRAPH, descifrar, listarCatalogos } from "@/lib/meta";
+import { redirect } from "next/navigation";
+import { GRAPH, buscarCatalogo, descifrar, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
 
 async function conexionActual() {
@@ -11,12 +12,24 @@ async function conexionActual() {
 }
 
 export async function elegirCatalogo(formData: FormData) {
-  const id = String(formData.get("catalogo_id") ?? "");
+  const id = String(formData.get("catalogo_id") ?? "").replace(/\D/g, "");
   const { supabase, token } = await conexionActual();
   if (!token || !id) return;
-  // Se vuelve a pedir la lista a Meta para no confiar en lo que manda el formulario
-  const elegido = (await listarCatalogos(token)).find((c) => c.id === id);
-  if (!elegido) return;
+  // Se verifica con Meta (no se confía en lo que manda el formulario): primero en la lista,
+  // y si no aparece (por ejemplo, un catálogo creado desde WhatsApp), consultándolo por su ID.
+  let elegido: { id: string; name: string; negocioId: string | null; negocioNombre: string | null } | undefined =
+    (await listarCatalogos(token).catch(() => [])).find((c) => c.id === id);
+  if (!elegido) {
+    try {
+      elegido = await buscarCatalogo(token, id);
+    } catch (e) {
+      const motivo = e instanceof Error ? e.message : "";
+      redirect(
+        "/meta?error=" +
+          encodeURIComponent(`No se pudo usar el catálogo ${id}: la cuenta conectada no tiene acceso. ${motivo}`),
+      );
+    }
+  }
   await supabase
     .from("meta_conexion")
     .update({

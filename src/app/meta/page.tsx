@@ -144,8 +144,8 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
               </p>
               {catalogos.length === 0 ? (
                 <p className="mt-3 rounded-xl bg-fondo px-4 py-3 text-sm text-tinta-suave">
-                  Esta cuenta no tiene catálogos disponibles. Creá uno en Commerce Manager, o al conectar asegurate de
-                  darle acceso al negocio de Alaska Kids.
+                  Meta no devolvió catálogos para esta cuenta. Si ya existe uno (por ejemplo, el de WhatsApp), ingresá
+                  su ID abajo.
                 </p>
               ) : (
                 <ul className="mt-3 space-y-2">
@@ -166,6 +166,26 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
                   ))}
                 </ul>
               )}
+
+              <form action={elegirCatalogo} className="mt-4 flex flex-wrap items-end gap-2 border-t border-borde pt-4">
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="catalogo_id" className="etiqueta">
+                    ¿No aparece? ID del catálogo
+                  </label>
+                  <input
+                    id="catalogo_id"
+                    name="catalogo_id"
+                    inputMode="numeric"
+                    required
+                    placeholder="1347729337174599"
+                    className="campo"
+                  />
+                  <span className="mt-1 block text-xs text-tinta-suave">
+                    Está en Administrador de ventas → Catálogos, debajo del nombre.
+                  </span>
+                </div>
+                <button className="boton">Usar este ID</button>
+              </form>
             </div>
           )}
 
