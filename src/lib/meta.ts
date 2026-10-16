@@ -87,3 +87,16 @@ export async function buscarCatalogo(token: string, id: string) {
   });
   return { ...c, negocioId: c.business?.id ?? null, negocioNombre: c.business?.name ?? null };
 }
+
+/** Qué le dio Facebook a la app: permisos aceptados y negocios visibles (para diagnosticar). */
+export async function diagnostico(token: string) {
+  const [permisos, negocios] = await Promise.all([
+    graph<{ data: { permission: string; status: string }[] }>("me/permissions", token).catch((e) => ({
+      error: String(e?.message ?? e),
+    })),
+    graph<{ data: { id: string; name: string }[] }>("me/businesses", token, { fields: "id,name" }).catch((e) => ({
+      error: String(e?.message ?? e),
+    })),
+  ]);
+  return { permisos, negocios };
+}

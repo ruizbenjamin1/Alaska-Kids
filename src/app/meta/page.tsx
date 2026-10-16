@@ -1,5 +1,5 @@
 import Panel from "@/components/Panel";
-import { appConfigurada, descifrar, graph, listarCatalogos } from "@/lib/meta";
+import { appConfigurada, descifrar, diagnostico, graph, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
 import { actualizarLotes } from "@/lib/catalogo";
 import { cambiarCatalogo, desconectar, elegirCatalogo } from "./acciones";
@@ -29,11 +29,13 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
   let problema: string | null = null;
   let catalogos: Awaited<ReturnType<typeof listarCatalogos>> = [];
   let enMeta: number | null = null;
+  let diag: Awaited<ReturnType<typeof diagnostico>> | null = null;
 
   if (conexion && appOk) {
     try {
       token = descifrar(conexion.token_cifrado);
       if (!conexion.catalogo_id) {
+        diag = await diagnostico(token);
         catalogos = await listarCatalogos(token);
       } else {
         const c = await graph<{ product_count?: number }>(conexion.catalogo_id, token, { fields: "product_count" });
@@ -165,6 +167,38 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {diag && (
+                <details className="mt-4 rounded-xl bg-fondo px-4 py-3 text-xs text-tinta-suave" open>
+                  <summary className="cursor-pointer font-medium text-tinta">Diagnóstico de la conexión</summary>
+                  <p className="mt-2 font-medium text-tinta">Permisos que dio Facebook:</p>
+                  {"error" in diag.permisos ? (
+                    <p className="text-peligro">{diag.permisos.error}</p>
+                  ) : (
+                    <ul className="list-inside list-disc">
+                      {diag.permisos.data.map((p) => (
+                        <li key={p.permission}>
+                          {p.permission}: {p.status === "granted" ? "aceptado" : p.status}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <p className="mt-2 font-medium text-tinta">Negocios que ve la app:</p>
+                  {"error" in diag.negocios ? (
+                    <p className="text-peligro">{diag.negocios.error}</p>
+                  ) : diag.negocios.data.length === 0 ? (
+                    <p>Ninguno</p>
+                  ) : (
+                    <ul className="list-inside list-disc">
+                      {diag.negocios.data.map((n) => (
+                        <li key={n.id}>
+                          {n.name} ({n.id})
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </details>
               )}
 
               <form action={elegirCatalogo} className="mt-4 flex flex-wrap items-end gap-2 border-t border-borde pt-4">
