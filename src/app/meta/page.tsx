@@ -2,7 +2,8 @@ import Panel from "@/components/Panel";
 import { appConfigurada, descifrar, diagnostico, graph, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
 import { actualizarLotes } from "@/lib/catalogo";
-import { cambiarCatalogo, desconectar, elegirCatalogo } from "./acciones";
+import { listarCuentas, permisosFaltantes, type CuentaRedes } from "@/lib/redes";
+import { cambiarCatalogo, desconectar, elegirCatalogo, elegirPagina } from "./acciones";
 import { enviarPendientes, guardarAjustes } from "./sincronizar";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,9 @@ type Conexion = {
   negocio_nombre: string | null;
   catalogo_id: string | null;
   catalogo_nombre: string | null;
+  pagina_id: string | null;
+  pagina_nombre: string | null;
+  ig_usuario: string | null;
 };
 
 const fecha = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", year: "numeric" });
@@ -47,6 +51,14 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
   }
 
   const conectado = Boolean(conexion?.catalogo_id && !problema);
+
+  // Redes sociales: permisos para publicar y páginas disponibles
+  let faltanPublicar: string[] | null = null;
+  let cuentas: CuentaRedes[] = [];
+  if (conexion && token && !problema) {
+    faltanPublicar = await permisosFaltantes(token).catch(() => null);
+    if (faltanPublicar && faltanPublicar.length === 0) cuentas = await listarCuentas(token).catch(() => []);
+  }
 
   // Revisa cómo terminaron los envíos anteriores antes de contar
   if (conectado && token && conexion?.catalogo_id) {
@@ -285,6 +297,70 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
             El acceso se guarda cifrado en el servidor: nunca se muestra en la página ni queda en el código.
           </p>
         </section>
+
+        {/* ───── Redes sociales (publicar en Instagram y Facebook) ───── */}
+        {conexion && !problema && (
+          <section className="mt-4 rounded-2xl border border-borde bg-papel p-5">
+            <h2 className="font-semibold">Publicar en redes</h2>
+            <p className="mb-4 text-sm text-tinta-suave">
+              Desde cada producto se puede publicar en Instagram y en la página de Facebook.
+            </p>
+
+            {faltanPublicar === null ? (
+              <p className="rounded-xl bg-fondo px-4 py-3 text-sm text-tinta-suave">
+                No se pudieron revisar los permisos de publicación.
+              </p>
+            ) : faltanPublicar.length > 0 ? (
+              <div className="rounded-xl bg-fondo px-4 py-3 text-sm">
+                <p className="text-tinta-suave">
+                  Falta dar permiso para publicar. Actualizá la configuración de la app de Meta con estos permisos y
+                  reconectá:
+                </p>
+                <p className="mt-2 flex flex-wrap gap-1.5">
+                  {faltanPublicar.map((p) => (
+                    <code key={p} className="rounded bg-papel px-1.5 py-0.5 text-xs">
+                      {p}
+                    </code>
+                  ))}
+                </p>
+                <a href="/api/meta/conectar" className="boton mt-3">
+                  Reconectar
+                </a>
+              </div>
+            ) : cuentas.length === 0 ? (
+              <p className="rounded-xl bg-fondo px-4 py-3 text-sm text-tinta-suave">
+                La cuenta conectada no administra ninguna página de Facebook. Al reconectar, asegurate de darle acceso a
+                la página de Alaska Kids.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {cuentas.map((c) => {
+                  const elegida = c.paginaId === conexion.pagina_id;
+                  return (
+                    <li key={c.paginaId} className="flex items-center justify-between gap-3 rounded-xl bg-fondo px-4 py-3">
+                      <span className="min-w-0 text-sm">
+                        <span className="block font-medium">Facebook: {c.paginaNombre}</span>
+                        <span className="block text-tinta-suave">
+                          Instagram: {c.igUsuario ? `@${c.igUsuario}` : "sin cuenta profesional vinculada"}
+                        </span>
+                      </span>
+                      {elegida ? (
+                        <span className="shrink-0 rounded-full bg-ok-suave px-3 py-1 text-xs font-semibold text-ok">
+                          En uso
+                        </span>
+                      ) : (
+                        <form action={elegirPagina}>
+                          <input type="hidden" name="pagina_id" value={c.paginaId} />
+                          <button className="boton-secundario shrink-0 px-3 py-2">Usar esta</button>
+                        </form>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
 
         <section className="mt-4 rounded-2xl border border-borde bg-papel p-5">
           <h2 className="font-semibold">Productos</h2>

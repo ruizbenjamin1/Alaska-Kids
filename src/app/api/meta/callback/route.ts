@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { GRAPH, cifrar, graph, listarCatalogos } from "@/lib/meta";
+import { listarCuentas } from "@/lib/redes";
 import { createClient } from "@/lib/supabase/server";
 
 type RespuestaToken = { access_token: string; expires_in?: number };
@@ -46,6 +47,10 @@ export async function GET(req: NextRequest) {
     const catalogos = await listarCatalogos(token);
     // Si hay un solo catálogo, lo elegimos directamente
     const unico = catalogos.length === 1 ? catalogos[0] : null;
+    // Página de Facebook (con su Instagram) para publicar: si hay una sola con Instagram, se elige sola
+    const cuentas = await listarCuentas(token).catch(() => []);
+    const conIg = cuentas.filter((c) => c.igId);
+    const pagina = conIg.length === 1 ? conIg[0] : cuentas.length === 1 ? cuentas[0] : null;
 
     const supabase = await createClient();
     const { error } = await supabase.from("meta_conexion").upsert({
@@ -57,6 +62,10 @@ export async function GET(req: NextRequest) {
       negocio_nombre: unico?.negocioNombre ?? null,
       catalogo_id: unico?.id ?? null,
       catalogo_nombre: unico?.name ?? null,
+      pagina_id: pagina?.paginaId ?? null,
+      pagina_nombre: pagina?.paginaNombre ?? null,
+      ig_id: pagina?.igId ?? null,
+      ig_usuario: pagina?.igUsuario ?? null,
       conectado_en: new Date().toISOString(),
     });
     if (error) throw new Error(error.message);

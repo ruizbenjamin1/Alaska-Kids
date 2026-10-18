@@ -14,8 +14,16 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:cr
 export const META_API_VERSION = process.env.META_API_VERSION ?? "v23.0";
 export const GRAPH = `https://graph.facebook.com/${META_API_VERSION}`;
 
-/** Permisos que se piden al conectar (solo catálogo por ahora). */
-export const PERMISOS = ["catalog_management", "business_management"];
+/** Permisos que se piden al conectar (si no se usa META_CONFIG_ID): catálogo + publicar en redes. */
+export const PERMISOS = [
+  "catalog_management",
+  "business_management",
+  "pages_show_list",
+  "pages_read_engagement",
+  "pages_manage_posts",
+  "instagram_basic",
+  "instagram_content_publish",
+];
 
 export function appConfigurada() {
   return Boolean(process.env.META_APP_ID && process.env.META_APP_SECRET);

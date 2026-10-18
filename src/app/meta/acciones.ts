@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { GRAPH, buscarCatalogo, descifrar, listarCatalogos } from "@/lib/meta";
+import { listarCuentas } from "@/lib/redes";
 import { createClient } from "@/lib/supabase/server";
 
 async function conexionActual() {
@@ -58,5 +59,24 @@ export async function desconectar() {
     }).catch(() => null);
   }
   await supabase.from("meta_conexion").delete().eq("id", 1);
+  revalidatePath("/meta");
+}
+
+/** Elige la página de Facebook (y su Instagram) donde se publican los productos. */
+export async function elegirPagina(formData: FormData) {
+  const id = String(formData.get("pagina_id") ?? "");
+  const { supabase, token } = await conexionActual();
+  if (!token || !id) return;
+  const cuenta = (await listarCuentas(token).catch(() => [])).find((c) => c.paginaId === id);
+  if (!cuenta) return;
+  await supabase
+    .from("meta_conexion")
+    .update({
+      pagina_id: cuenta.paginaId,
+      pagina_nombre: cuenta.paginaNombre,
+      ig_id: cuenta.igId,
+      ig_usuario: cuenta.igUsuario,
+    })
+    .eq("id", 1);
   revalidatePath("/meta");
 }
