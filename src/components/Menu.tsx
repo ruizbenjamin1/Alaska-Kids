@@ -20,6 +20,14 @@ const opciones = [
       <path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1" />
     ),
   },
+  {
+    href: "/ayuda",
+    nombre: "Guía",
+    activo: (ruta: string) => ruta.startsWith("/ayuda"),
+    icono: (
+      <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-2.5-11.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6m0 3h.01" />
+    ),
+  },
 ];
 
 export default function Menu() {

@@ -1,10 +1,22 @@
 "use client";
 
+import {
+  DndContext,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import imageCompression from "browser-image-compression";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { BUCKET, parsearPrecio, urlPublica, type Producto } from "@/lib/types";
+import { BUCKET, formatearEntradaPrecio, parsearPrecio, urlPublica, type Producto } from "@/lib/types";
 import { enviarProductos, quitarDeMeta } from "@/app/meta/sincronizar";
 
 const MAX_FOTOS = 10; // límite de un carrusel de Instagram
@@ -46,7 +58,9 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
 
   const [nombre, setNombre] = useState(producto?.nombre ?? "");
   const [descripcion, setDescripcion] = useState(producto?.descripcion ?? "");
-  const [precio, setPrecio] = useState(producto ? String(producto.precio).replace(".", ",") : "");
+  const [precio, setPrecio] = useState(
+    producto ? formatearEntradaPrecio(String(Number(producto.precio)).replace(".", ",")) : "",
+  );
   const [talles, setTalles] = useState(producto?.talles ?? "");
   const [disponible, setDisponible] = useState(producto?.disponible ?? true);
 
@@ -225,6 +239,21 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
 
   const lugarLibre = fotos.length + procesando < MAX_FOTOS;
 
+  // Arrastrar para reordenar: con mouse al moverse 6px; en iPhone/iPad manteniendo apretado un momento
+  const sensores = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  function alSoltar({ active, over }: DragEndEvent) {
+    if (!over || active.id === over.id) return;
+    setFotos((prev) => {
+      const desde = prev.findIndex((f) => f.key === active.id);
+      const hasta = prev.findIndex((f) => f.key === over.id);
+      return desde < 0 || hasta < 0 ? prev : arrayMove(prev, desde, hasta);
+    });
+  }
+
   return (
     <form onSubmit={guardar} className="space-y-6">
       {/* ───── Fotos ───── */}
@@ -232,18 +261,21 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
         <div className="mb-2 flex items-baseline justify-between">
           <span className="etiqueta mb-0">Fotos</span>
           <span className="text-xs text-tinta-suave">
-            {fotos.length}/{MAX_FOTOS} · la primera es la principal
+            {fotos.length}/{MAX_FOTOS} · arrastrá para ordenar · la primera es la principal
           </span>
         </div>
 
+        <DndContext sensors={sensores} collisionDetection={closestCenter} onDragEnd={alSoltar}>
+        <SortableContext items={fotos.map((f) => f.key)} strategy={rectSortingStrategy} disabled={guardando}>
         <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
           {fotos.map((f, i) => (
-            <li key={f.key} className="group relative aspect-square overflow-hidden rounded-xl border border-borde bg-papel">
+            <FotoOrdenable key={f.key} id={f.key}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={f.tipo === "nueva" ? f.preview : urlPublica(f.storage_path)}
                 alt=""
-                className="h-full w-full object-cover"
+                draggable={false}
+                className="pointer-events-none h-full w-full select-none object-cover"
               />
               {i === 0 ? (
                 <span className="absolute bottom-1 left-1 rounded-md bg-acento px-1.5 py-0.5 text-[11px] font-semibold text-sobre-acento">
@@ -268,7 +300,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
               >
                 ×
               </button>
-            </li>
+            </FotoOrdenable>
           ))}
 
           {Array.from({ length: procesando }).map((_, i) => (
@@ -306,6 +338,8 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
             </li>
           )}
         </ul>
+        </SortableContext>
+        </DndContext>
 
         <input
           ref={inputFotos}
@@ -358,8 +392,8 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
                 id="precio"
                 inputMode="decimal"
                 value={precio}
-                onChange={(e) => setPrecio(e.target.value)}
-                placeholder="12500"
+                onChange={(e) => setPrecio(formatearEntradaPrecio(e.target.value))}
+                placeholder="12.500"
                 className="campo pl-7"
                 disabled={guardando}
               />
@@ -416,5 +450,24 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
         </div>
       </div>
     </form>
+  );
+}
+
+/** Una foto de la grilla que se puede arrastrar para cambiarla de lugar. */
+function FotoOrdenable({ id, children }: { id: string; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, WebkitTouchCallout: "none" }}
+      {...attributes}
+      {...listeners}
+      aria-roledescription="foto ordenable"
+      className={`group relative aspect-square cursor-grab touch-manipulation select-none overflow-hidden rounded-xl border border-borde bg-papel active:cursor-grabbing ${
+        isDragging ? "z-10 scale-105 opacity-90 shadow-lg ring-2 ring-acento" : ""
+      }`}
+    >
+      {children}
+    </li>
   );
 }

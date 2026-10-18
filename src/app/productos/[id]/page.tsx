@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import BotonEnviar from "@/components/BotonEnviar";
 import FormularioProducto from "@/components/FormularioProducto";
 import PublicarEnRedes, { type Publicacion } from "@/components/PublicarEnRedes";
 import { appConfigurada, descifrar } from "@/lib/meta";
 import { permisosFaltantes, textoSugerido } from "@/lib/redes";
 import { createClient } from "@/lib/supabase/server";
 import type { Producto } from "@/lib/types";
+import { duplicarProducto } from "./duplicar";
 
 export const dynamic = "force-dynamic";
 // Publicar un carrusel en Instagram puede tardar: Meta procesa cada foto antes de publicar
@@ -26,7 +28,19 @@ export default async function EditarProducto({ params }: { params: Promise<{ id:
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6">
-      <h1 className="mb-5 text-2xl font-bold tracking-tight">Editar producto</h1>
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold tracking-tight">Editar producto</h1>
+        <form action={duplicarProducto}>
+          <input type="hidden" name="producto_id" value={producto.id} />
+          <BotonEnviar className="boton-secundario px-3 py-2" textoCargando="Duplicando…">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+              <rect x="9" y="9" width="12" height="12" rx="2" />
+              <path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" />
+            </svg>
+            Duplicar
+          </BotonEnviar>
+        </form>
+      </div>
       <FormularioProducto producto={producto} />
       {/* La parte de redes consulta a Meta: se carga aparte para que el formulario aparezca al instante */}
       <Suspense

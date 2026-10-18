@@ -1,5 +1,5 @@
 import Link from "next/link";
-import TarjetaProducto from "@/components/TarjetaProducto";
+import ListaProductos from "@/components/ListaProductos";
 import { createClient } from "@/lib/supabase/server";
 import type { Producto } from "@/lib/types";
 
@@ -9,7 +9,7 @@ export default async function Inicio() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("productos")
-    .select("id, nombre, descripcion, precio, talles, disponible, meta_estado, creado_en, producto_fotos(id, storage_path, orden)")
+    .select("id, nombre, descripcion, precio, talles, disponible, meta_estado, creado_en, producto_fotos(id, storage_path, orden), publicaciones(red, estado)")
     .order("creado_en", { ascending: false })
     .order("orden", { referencedTable: "producto_fotos", ascending: true });
 
@@ -47,11 +47,7 @@ export default async function Inicio() {
             </p>
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {productos.map((p) => (
-              <TarjetaProducto key={p.id} producto={p} />
-            ))}
-          </ul>
+          <ListaProductos productos={productos} />
         )}
       </main>
     </>

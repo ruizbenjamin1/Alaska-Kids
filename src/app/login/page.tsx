@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -45,7 +46,12 @@ export default function LoginPage() {
           className="campo mb-4"
         />
 
-        <label className="etiqueta" htmlFor="password">Contraseña</label>
+        <div className="mb-1.5 flex items-baseline justify-between">
+          <label className="etiqueta mb-0" htmlFor="password">Contraseña</label>
+          <Link href="/login/recuperar" className="text-xs text-acento hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </div>
         <input
           id="password"
           type="password"

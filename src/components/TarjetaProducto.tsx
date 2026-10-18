@@ -7,17 +7,24 @@ import { createClient } from "@/lib/supabase/client";
 import { formatearPrecio, urlPublica, type Producto } from "@/lib/types";
 import { enviarProductos } from "@/app/meta/sincronizar";
 
-export default function TarjetaProducto({ producto }: { producto: Producto }) {
+export default function TarjetaProducto({
+  producto,
+  onCambioDisponible,
+}: {
+  producto: Producto;
+  /** Avisa a la lista apenas cambia, para que los filtros se actualicen al instante */
+  onCambioDisponible: (id: string, disponible: boolean) => void;
+}) {
   const router = useRouter();
-  const [disponible, setDisponible] = useState(producto.disponible);
   const [guardando, setGuardando] = useState(false);
+  const disponible = producto.disponible;
 
   const portada = producto.producto_fotos[0];
   const cantFotos = producto.producto_fotos.length;
 
   async function alternarDisponible() {
     const nuevo = !disponible;
-    setDisponible(nuevo); // optimista
+    onCambioDisponible(producto.id, nuevo); // se ve el cambio enseguida; lo de abajo sigue en segundo plano
     setGuardando(true);
     const { error } = await createClient()
       .from("productos")
@@ -25,12 +32,14 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
       .eq("id", producto.id);
     setGuardando(false);
     if (error) {
-      setDisponible(!nuevo);
+      onCambioDisponible(producto.id, !nuevo);
       alert("No se pudo actualizar. Probá de nuevo.");
       return;
     }
-    await enviarProductos([producto.id]).catch(() => null);
-    router.refresh();
+    // Meta y la recarga de datos no frenan la pantalla
+    enviarProductos([producto.id])
+      .catch(() => null)
+      .finally(() => router.refresh());
   }
 
   return (
@@ -70,6 +79,7 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
           {producto.talles && (
             <p className="line-clamp-1 text-xs text-tinta-suave">Talles {producto.talles}</p>
           )}
+          <Indicadores producto={producto} />
         </div>
       </Link>
 
@@ -93,5 +103,39 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
         </button>
       </div>
     </li>
+  );
+}
+
+/** Dónde está el producto: catálogo de Meta, Instagram, Facebook. */
+function Indicadores({ producto }: { producto: Producto }) {
+  const publicado = (red: "instagram" | "facebook") =>
+    (producto.publicaciones ?? []).some((p) => p.red === red && p.estado === "publicado");
+  const enCatalogo = producto.meta_estado === "sincronizado";
+  const pendiente = producto.meta_estado === "pendiente" || producto.meta_estado === "enviando";
+
+  const chip = "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none";
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1">
+      {enCatalogo && (
+        <span className={`${chip} bg-ok-suave text-ok`} title="Está en el catálogo de Meta">
+          ✓ Catálogo
+        </span>
+      )}
+      {pendiente && (
+        <span className={`${chip} bg-fondo text-tinta-suave`} title="Todavía no se envió al catálogo de Meta">
+          Catálogo pendiente
+        </span>
+      )}
+      {publicado("instagram") && (
+        <span className={`${chip} bg-acento-suave text-acento`} title="Publicado en Instagram">
+          ✓ IG
+        </span>
+      )}
+      {publicado("facebook") && (
+        <span className={`${chip} bg-acento-suave text-acento`} title="Publicado en Facebook">
+          ✓ FB
+        </span>
+      )}
+    </div>
   );
 }
