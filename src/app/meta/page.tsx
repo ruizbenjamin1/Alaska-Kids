@@ -1,9 +1,9 @@
-import Panel from "@/components/Panel";
 import { appConfigurada, descifrar, diagnostico, graph, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
 import { actualizarLotes } from "@/lib/catalogo";
 import { listarCuentas, permisosFaltantes, type CuentaRedes } from "@/lib/redes";
 import { cambiarCatalogo, desconectar, elegirCatalogo, elegirPagina } from "./acciones";
+import BotonEnviar from "@/components/BotonEnviar";
 import { enviarPendientes, guardarAjustes } from "./sincronizar";
 
 export const dynamic = "force-dynamic";
@@ -35,16 +35,29 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
   let enMeta: number | null = null;
   let diag: Awaited<ReturnType<typeof diagnostico>> | null = null;
 
+  // Todas las consultas a Meta van en paralelo (antes iban una detrás de otra y la pantalla tardaba)
+  let faltanPublicar: string[] | null = null;
+  let cuentas: CuentaRedes[] = [];
   if (conexion && appOk) {
     try {
       token = descifrar(conexion.token_cifrado);
-      if (!conexion.catalogo_id) {
-        diag = await diagnostico(token);
-        catalogos = await listarCatalogos(token);
-      } else {
-        const c = await graph<{ product_count?: number }>(conexion.catalogo_id, token, { fields: "product_count" });
-        enMeta = c.product_count ?? null;
-      }
+      const t = token;
+      const catalogoId = conexion.catalogo_id;
+      const [estadoCatalogo, faltan, ctas] = await Promise.all([
+        catalogoId
+          ? graph<{ product_count?: number }>(catalogoId, t, { fields: "product_count" }).then((c) => ({
+              enMeta: c.product_count ?? null,
+            }))
+          : Promise.all([diagnostico(t), listarCatalogos(t)]).then(([d, l]) => ({ diag: d, catalogos: l })),
+        permisosFaltantes(t).catch(() => null),
+        listarCuentas(t).catch(() => [] as CuentaRedes[]),
+        // Revisa cómo terminaron los envíos anteriores antes de contar
+        catalogoId ? actualizarLotes(supabase, { token: t, catalogoId }).catch(() => null) : null,
+      ]);
+      if ("enMeta" in estadoCatalogo) enMeta = estadoCatalogo.enMeta;
+      else ({ diag, catalogos } = estadoCatalogo);
+      faltanPublicar = faltan;
+      cuentas = faltan && faltan.length === 0 ? ctas : [];
     } catch (e) {
       problema = e instanceof Error ? e.message : "No se pudo verificar la conexión con Meta.";
     }
@@ -52,18 +65,6 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
 
   const conectado = Boolean(conexion?.catalogo_id && !problema);
 
-  // Redes sociales: permisos para publicar y páginas disponibles
-  let faltanPublicar: string[] | null = null;
-  let cuentas: CuentaRedes[] = [];
-  if (conexion && token && !problema) {
-    faltanPublicar = await permisosFaltantes(token).catch(() => null);
-    if (faltanPublicar && faltanPublicar.length === 0) cuentas = await listarCuentas(token).catch(() => []);
-  }
-
-  // Revisa cómo terminaron los envíos anteriores antes de contar
-  if (conectado && token && conexion?.catalogo_id) {
-    await actualizarLotes(supabase, { token, catalogoId: conexion.catalogo_id }).catch(() => null);
-  }
   const [{ data: estados }, { data: conError }, { data: ajustes }] = await Promise.all([
     supabase.from("productos").select("meta_estado"),
     supabase.from("productos").select("id, nombre, meta_error").eq("meta_estado", "error").limit(20),
@@ -77,7 +78,7 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
   for (const p of estados ?? []) cuenta[p.meta_estado as keyof typeof cuenta]++;
 
   return (
-    <Panel>
+    <>
       <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">
         <h1 className="text-2xl font-bold tracking-tight">Meta</h1>
         <p className="mb-6 text-sm text-tinta-suave">Conexión con el catálogo de Facebook, Instagram y WhatsApp.</p>
@@ -174,7 +175,7 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
                       </span>
                       <form action={elegirCatalogo}>
                         <input type="hidden" name="catalogo_id" value={c.id} />
-                        <button className="boton shrink-0 px-3 py-2">Usar este</button>
+                        <BotonEnviar className="boton shrink-0 px-3 py-2">Usar este</BotonEnviar>
                       </form>
                     </li>
                   ))}
@@ -230,7 +231,7 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
                     Está en Administrador de ventas → Catálogos, debajo del nombre.
                   </span>
                 </div>
-                <button className="boton">Usar este ID</button>
+                <BotonEnviar textoCargando="Verificando…">Usar este ID</BotonEnviar>
               </form>
             </div>
           )}
@@ -284,11 +285,11 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
               )}
               {conectado && (
                 <form action={cambiarCatalogo}>
-                  <button className="boton-secundario">Cambiar catálogo</button>
+                  <BotonEnviar className="boton-secundario">Cambiar catálogo</BotonEnviar>
                 </form>
               )}
               <form action={desconectar}>
-                <button className="boton-secundario text-peligro">Desconectar</button>
+                <BotonEnviar className="boton-secundario text-peligro">Desconectar</BotonEnviar>
               </form>
             </div>
           )}
@@ -351,7 +352,7 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
                       ) : (
                         <form action={elegirPagina}>
                           <input type="hidden" name="pagina_id" value={c.paginaId} />
-                          <button className="boton-secundario shrink-0 px-3 py-2">Usar esta</button>
+                          <BotonEnviar className="boton-secundario shrink-0 px-3 py-2">Usar esta</BotonEnviar>
                         </form>
                       )}
                     </li>
@@ -390,7 +391,7 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
           )}
           {conectado && cuenta.pendiente + cuenta.error > 0 && (
             <form action={enviarPendientes} className="mt-4">
-              <button className="boton">Enviar pendientes ({cuenta.pendiente + cuenta.error})</button>
+              <BotonEnviar textoCargando="Enviando…">Enviar pendientes ({cuenta.pendiente + cuenta.error})</BotonEnviar>
             </form>
           )}
 
@@ -435,11 +436,11 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
               <input id="marca" name="marca" defaultValue={ajustes?.marca ?? "Alaska Kids"} className="campo" />
             </div>
             <div className="sm:col-span-2">
-              <button className="boton-secundario">Guardar datos</button>
+              <BotonEnviar className="boton-secundario" textoCargando="Guardando…">Guardar datos</BotonEnviar>
             </div>
           </form>
         </section>
       </main>
-    </Panel>
+    </>
   );
 }

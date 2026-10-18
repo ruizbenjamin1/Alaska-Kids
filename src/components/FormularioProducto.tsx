@@ -246,7 +246,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
                 className="h-full w-full object-cover"
               />
               {i === 0 ? (
-                <span className="absolute bottom-1 left-1 rounded-md bg-acento px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                <span className="absolute bottom-1 left-1 rounded-md bg-acento px-1.5 py-0.5 text-[11px] font-semibold text-sobre-acento">
                   Principal
                 </span>
               ) : (
@@ -254,7 +254,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
                   type="button"
                   onClick={() => hacerPrincipal(f.key)}
                   disabled={guardando}
-                  className="absolute bottom-1 left-1 rounded-md bg-white/90 px-1.5 py-0.5 text-[11px] font-medium text-tinta"
+                  className="absolute bottom-1 left-1 rounded-md bg-papel/90 px-1.5 py-0.5 text-[11px] font-medium text-tinta"
                 >
                   Hacer principal
                 </button>
@@ -410,6 +410,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
             Cancelar
           </button>
           <button type="submit" disabled={guardando || procesando > 0} className="boton flex-1 sm:flex-none sm:min-w-40">
+            {estado && <span className="girando" aria-hidden />}
             {estado ?? (editando ? "Guardar cambios" : "Guardar producto")}
           </button>
         </div>

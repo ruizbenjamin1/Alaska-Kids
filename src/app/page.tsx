@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Panel from "@/components/Panel";
 import TarjetaProducto from "@/components/TarjetaProducto";
 import { createClient } from "@/lib/supabase/server";
 import type { Producto } from "@/lib/types";
@@ -18,7 +17,7 @@ export default async function Inicio() {
   const disponibles = productos.filter((p) => p.disponible).length;
 
   return (
-    <Panel>
+    <>
       <main className="mx-auto max-w-5xl px-4 pb-16 pt-6">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -55,6 +54,6 @@ export default async function Inicio() {
           </ul>
         )}
       </main>
-    </Panel>
+    </>
   );
 }

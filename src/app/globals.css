@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
+/* Tailwind: dark: se activa con data-theme="dark" (lo pone el botón de tema o el modo del dispositivo) */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ───────────── Modo claro ───────────── */
 :root {
+  color-scheme: light;
   --fondo: #f7f4ef;
   --papel: #ffffff;
   --tinta: #1d2733;
@@ -9,10 +14,29 @@
   --acento: #2f5d8a;
   --acento-hover: #244a6f;
   --acento-suave: #e6eef6;
+  --sobre-acento: #ffffff; /* texto encima de botones y etiquetas de color */
   --ok: #2f7a4f;
   --ok-suave: #e3f2e9;
   --peligro: #b2412e;
   --peligro-suave: #fbe9e5;
+}
+
+/* ───────────── Modo oscuro ───────────── */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --fondo: #11161c;
+  --papel: #1a2129;
+  --tinta: #e7ecf1;
+  --tinta-suave: #9aa6b2;
+  --borde: #2b3440;
+  --acento: #7eaedf;
+  --acento-hover: #9cc2ea;
+  --acento-suave: #1d2c3c;
+  --sobre-acento: #0d1620;
+  --ok: #6cc795;
+  --ok-suave: #16301f;
+  --peligro: #ef8b78;
+  --peligro-suave: #3a201b;
 }
 
 @theme inline {
@@ -24,6 +48,7 @@
   --color-acento: var(--acento);
   --color-acento-hover: var(--acento-hover);
   --color-acento-suave: var(--acento-suave);
+  --color-sobre-acento: var(--sobre-acento);
   --color-ok: var(--ok);
   --color-ok-suave: var(--ok-suave);
   --color-peligro: var(--peligro);
@@ -35,20 +60,29 @@ body {
   background: var(--fondo);
   color: var(--tinta);
   font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.campo {
-  @apply w-full rounded-xl border border-borde bg-papel px-3.5 py-2.5 text-base text-tinta outline-none transition placeholder:text-tinta-suave/60 focus:border-acento focus:ring-4 focus:ring-acento/15;
-}
+/* En una capa de componentes, para que las clases sueltas (ej. pl-7) puedan pisarlas */
+@layer components {
+  .campo {
+    @apply w-full rounded-xl border border-borde bg-papel px-3.5 py-2.5 text-base text-tinta outline-none transition placeholder:text-tinta-suave/60 focus:border-acento focus:ring-4 focus:ring-acento/15;
+  }
 
-.etiqueta {
-  @apply mb-1.5 block text-sm font-medium text-tinta;
-}
+  .etiqueta {
+    @apply mb-1.5 block text-sm font-medium text-tinta;
+  }
 
-.boton {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-acento px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-acento-hover disabled:cursor-not-allowed disabled:opacity-60;
-}
+  .boton {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-acento px-4 py-2.5 text-sm font-semibold text-sobre-acento transition hover:bg-acento-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60;
+  }
 
-.boton-secundario {
-  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-borde bg-papel px-4 py-2.5 text-sm font-medium text-tinta transition hover:bg-fondo disabled:opacity-60;
+  .boton-secundario {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-borde bg-papel px-4 py-2.5 text-sm font-medium text-tinta transition hover:bg-fondo active:scale-[0.98] disabled:opacity-60;
+  }
+
+  /* Ruedita de "cargando" para botones */
+  .girando {
+    @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent;
+  }
 }

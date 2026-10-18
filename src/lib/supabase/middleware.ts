@@ -23,14 +23,14 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Páginas públicas de producto: las ve cualquiera (es el link que usa Meta)
+  if (request.nextUrl.pathname.startsWith("/p/")) return response;
+
+  // getClaims verifica la sesión sin ir hasta el servidor de Supabase en cada clic (más rápido que getUser)
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const enLogin = request.nextUrl.pathname.startsWith("/login");
-  // Páginas públicas de producto: las ve cualquiera (es el link que usa Meta)
-  const publica = request.nextUrl.pathname.startsWith("/p/");
-  if (publica) return response;
 
   if (!user && !enLogin) {
     const url = request.nextUrl.clone();

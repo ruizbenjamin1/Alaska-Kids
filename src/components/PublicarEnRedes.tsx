@@ -94,6 +94,7 @@ export default function PublicarEnRedes({
           )}
 
           <button type="submit" disabled={publicando || !texto.trim()} className="boton">
+            {publicando && <span className="girando" aria-hidden />}
             {publicando ? "Publicando… (puede tardar un minuto)" : "Publicar"}
           </button>
         </form>

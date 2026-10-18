@@ -54,12 +54,12 @@ export default function TarjetaProducto({ producto }: { producto: Producto }) {
             </span>
           )}
           {producto.meta_estado === "error" && (
-            <span className="absolute bottom-2 left-2 rounded-full bg-peligro px-2 py-0.5 text-xs font-semibold text-white">
+            <span className="absolute bottom-2 left-2 rounded-full bg-peligro px-2 py-0.5 text-xs font-semibold text-sobre-acento">
               Error en Meta
             </span>
           )}
           {!disponible && (
-            <span className="absolute left-2 top-2 rounded-full bg-tinta px-2 py-0.5 text-xs font-semibold text-white">
+            <span className="absolute left-2 top-2 rounded-full bg-black/75 px-2 py-0.5 text-xs font-semibold text-white">
               Agotado
             </span>
           )}
