@@ -45,6 +45,10 @@ const temas: Tema[] = [
           <li>La <strong>primera</strong> es la principal: es la que se ve en la lista, en el catálogo y la primera del carrusel.</li>
           <li>Para cambiar el orden, <strong>mantené apretada una foto</strong> un segundo y arrastrala a otro lugar. También podés tocar <strong>“Hacer principal”</strong>.</li>
           <li>Para sacar una foto, tocá la <strong>×</strong> de arriba a la derecha.</li>
+          <li>
+            <strong>“Generar imagen con precio”</strong> (opcional): arma una imagen con la foto, el nombre, el precio, los talles y
+            los datos de contacto, y la pone primera. Si después cambiás el precio, tocá <strong>“Volver a generar imagen”</strong>.
+          </li>
         </ul>
         <Consejo>Las fotos salen mejor cuadradas, con buena luz y fondo liso. La app las achica sola para que suban rápido.</Consejo>
       </>

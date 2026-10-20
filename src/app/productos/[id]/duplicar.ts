@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PREFIJO_FLYER, esFlyer } from "@/lib/flyer";
 import { BUCKET } from "@/lib/types";
 
 /**
@@ -37,7 +38,7 @@ export async function duplicarProducto(formData: FormData) {
   const fotos = [...(original.producto_fotos ?? [])].sort((a, b) => a.orden - b.orden);
   const filas: { producto_id: string; storage_path: string; orden: number }[] = [];
   for (const [orden, f] of fotos.entries()) {
-    const destino = `${copia.id}/${crypto.randomUUID()}.jpg`;
+    const destino = `${copia.id}/${esFlyer(f.storage_path) ? PREFIJO_FLYER : ""}${crypto.randomUUID()}.jpg`;
     const { error: e } = await supabase.storage.from(BUCKET).copy(f.storage_path, destino);
     if (!e) filas.push({ producto_id: copia.id, storage_path: destino, orden });
   }

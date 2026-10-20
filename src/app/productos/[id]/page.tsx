@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import BotonEnviar from "@/components/BotonEnviar";
 import FormularioProducto from "@/components/FormularioProducto";
 import PublicarEnRedes, { type Publicacion } from "@/components/PublicarEnRedes";
+import { obtenerContacto } from "@/lib/contacto";
 import { appConfigurada, descifrar } from "@/lib/meta";
 import { permisosFaltantes, textoSugerido } from "@/lib/redes";
 import { createClient } from "@/lib/supabase/server";
@@ -16,6 +17,7 @@ export const maxDuration = 60;
 export default async function EditarProducto({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
+  const contactoPromesa = obtenerContacto();
   const { data } = await supabase
     .from("productos")
     .select("id, nombre, descripcion, precio, talles, disponible, meta_estado, creado_en, producto_fotos(id, storage_path, orden)")
@@ -25,6 +27,7 @@ export default async function EditarProducto({ params }: { params: Promise<{ id:
 
   if (!data) notFound();
   const producto = data as Producto;
+  const contacto = await contactoPromesa;
 
   return (
     <main className="mx-auto max-w-2xl px-4 pb-16 pt-6">
@@ -41,7 +44,7 @@ export default async function EditarProducto({ params }: { params: Promise<{ id:
           </BotonEnviar>
         </form>
       </div>
-      <FormularioProducto producto={producto} />
+      <FormularioProducto producto={producto} contacto={contacto} />
       {/* La parte de redes consulta a Meta: se carga aparte para que el formulario aparezca al instante */}
       <Suspense
         fallback={<div className="mt-8 h-40 animate-pulse rounded-2xl border border-borde bg-papel" aria-label="Cargando" />}

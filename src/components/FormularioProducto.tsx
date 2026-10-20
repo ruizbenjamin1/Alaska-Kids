@@ -18,12 +18,15 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { BUCKET, formatearEntradaPrecio, parsearPrecio, urlPublica, type Producto } from "@/lib/types";
 import { enviarProductos, quitarDeMeta } from "@/app/meta/sincronizar";
+import { PREFIJO_FLYER, esFlyer, generarFlyer, type Contacto } from "@/lib/flyer";
 
 const MAX_FOTOS = 10; // límite de un carrusel de Instagram
 
 type FotoItem =
   | { tipo: "existente"; key: string; id: string; storage_path: string }
-  | { tipo: "nueva"; key: string; file: File; preview: string };
+  | { tipo: "nueva"; key: string; file: File; preview: string; flyer?: boolean };
+
+const esItemFlyer = (f: FotoItem) => (f.tipo === "nueva" ? Boolean(f.flyer) : esFlyer(f.storage_path));
 
 function fotosIniciales(producto?: Producto): FotoItem[] {
   return (producto?.producto_fotos ?? []).map((f) => ({
@@ -46,7 +49,7 @@ async function prepararFoto(file: File): Promise<File> {
   return new File([comprimida], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
 }
 
-export default function FormularioProducto({ producto }: { producto?: Producto }) {
+export default function FormularioProducto({ producto, contacto }: { producto?: Producto; contacto: Contacto }) {
   const router = useRouter();
   const editando = Boolean(producto);
   const inputFotos = useRef<HTMLInputElement>(null);
@@ -63,6 +66,10 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
   );
   const [talles, setTalles] = useState(producto?.talles ?? "");
   const [disponible, setDisponible] = useState(producto?.disponible ?? true);
+
+  const [generando, setGenerando] = useState(false);
+  /** Con qué datos se generó el flyer en esta pantalla (para avisar si después cambian) */
+  const [flyerDe, setFlyerDe] = useState<string | null>(null);
 
   const [estado, setEstado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,6 +135,44 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
     });
   }
 
+  const firmaFlyer = `${nombre.trim()}|${parsearPrecio(precio)}|${talles.trim()}`;
+  const hayFlyer = fotos.some(esItemFlyer);
+  const flyerViejo = flyerDe !== null && hayFlyer && flyerDe !== firmaFlyer;
+
+  /** Arma la imagen con precio a partir de la primera foto que no sea un flyer y la pone como principal. */
+  async function crearFlyer() {
+    setError(null);
+    const base = fotos.find((f) => !esItemFlyer(f));
+    const precioNum = parsearPrecio(precio);
+    if (!base) return setError("Primero subí una foto del producto.");
+    if (!nombre.trim()) return setError("Poné el nombre antes de generar la imagen.");
+    if (precioNum === null) return setError("Poné el precio antes de generar la imagen.");
+    const viejos = fotos.filter(esItemFlyer);
+    if (fotos.length - viejos.length >= MAX_FOTOS) {
+      return setError(`Ya hay ${MAX_FOTOS} fotos. Sacá una para poder agregar la imagen con precio.`);
+    }
+
+    setGenerando(true);
+    try {
+      const file = await generarFlyer({
+        foto: base.tipo === "nueva" ? base.preview : urlPublica(base.storage_path),
+        nombre,
+        precio: precioNum,
+        talles,
+        contacto,
+      });
+      // Si ya había una imagen con precio, se reemplaza (no se acumulan)
+      for (const v of viejos) quitarFoto(v.key);
+      const item: FotoItem = { tipo: "nueva", key: crypto.randomUUID(), file, preview: URL.createObjectURL(file), flyer: true };
+      setFotos((prev) => [item, ...prev.filter((f) => !esItemFlyer(f))]);
+      setFlyerDe(firmaFlyer);
+    } catch (err) {
+      setError(`No se pudo generar la imagen. ${err instanceof Error ? err.message : ""}`);
+    } finally {
+      setGenerando(false);
+    }
+  }
+
   async function guardar(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -136,7 +181,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
     if (fotos.length === 0) return setError("Agregá al menos una foto.");
     if (!nombre.trim()) return setError("Poné un nombre al producto.");
     if (precioNum === null) return setError("El precio no es válido. Ejemplo: 12500");
-    if (procesando > 0) return setError("Esperá a que terminen de procesarse las fotos.");
+    if (procesando > 0 || generando) return setError("Esperá a que terminen de procesarse las fotos.");
 
     const supabase = createClient();
     const datos = {
@@ -169,7 +214,7 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
       let hechas = 0;
       for (const foto of nuevas) {
         setEstado(`Subiendo fotos… ${hechas + 1} de ${nuevas.length}`);
-        const ruta = `${productoId}/${crypto.randomUUID()}.jpg`;
+        const ruta = `${productoId}/${foto.flyer ? PREFIJO_FLYER : ""}${crypto.randomUUID()}.jpg`;
         const { error } = await supabase.storage
           .from(BUCKET)
           .upload(ruta, foto.file, { contentType: "image/jpeg", cacheControl: "31536000" });
@@ -340,6 +385,32 @@ export default function FormularioProducto({ producto }: { producto?: Producto }
         </ul>
         </SortableContext>
         </DndContext>
+
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <button
+            type="button"
+            onClick={crearFlyer}
+            disabled={guardando || generando || fotos.every(esItemFlyer)}
+            className="boton-secundario px-3 py-2"
+          >
+            {generando ? (
+              <span className="girando" aria-hidden />
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                <rect x="3" y="3" width="18" height="18" rx="3" />
+                <path d="M3 16l5-5 4 4 3-3 6 6M14.5 8.5h.01" />
+              </svg>
+            )}
+            {generando ? "Generando…" : hayFlyer ? "Volver a generar imagen" : "Generar imagen con precio"}
+          </button>
+          <span className="text-xs text-tinta-suave">
+            {flyerViejo ? (
+              <span className="font-medium text-peligro">Cambiaste los datos: volvé a generar la imagen para que coincida.</span>
+            ) : (
+              "Opcional. Arma una imagen con la foto, el nombre, el precio y tus datos de contacto, y la pone primera."
+            )}
+          </span>
+        </div>
 
         <input
           ref={inputFotos}
