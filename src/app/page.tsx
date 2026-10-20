@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ListaProductos from "@/components/ListaProductos";
+import { actualizarLotes, conexionLista } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
 import type { Producto } from "@/lib/types";
 
@@ -7,6 +8,17 @@ export const dynamic = "force-dynamic";
 
 export default async function Inicio() {
   const supabase = await createClient();
+
+  // Si hay productos "enviando", se le pregunta a Meta si ya los procesó (como máximo 4 segundos, para no demorar la lista)
+  const { count: enviando } = await supabase
+    .from("productos")
+    .select("id", { count: "exact", head: true })
+    .eq("meta_estado", "enviando");
+  if (enviando) {
+    const revisar = conexionLista(supabase).then((c) => (c ? actualizarLotes(supabase, c) : null));
+    await Promise.race([revisar.catch(() => null), new Promise((ok) => setTimeout(ok, 4000))]);
+  }
+
   const { data, error } = await supabase
     .from("productos")
     .select("id, nombre, descripcion, precio, talles, disponible, meta_estado, creado_en, producto_fotos(id, storage_path, orden), publicaciones(red, estado)")

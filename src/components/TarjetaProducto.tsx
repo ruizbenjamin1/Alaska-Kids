@@ -111,7 +111,8 @@ function Indicadores({ producto }: { producto: Producto }) {
   const publicado = (red: "instagram" | "facebook") =>
     (producto.publicaciones ?? []).some((p) => p.red === red && p.estado === "publicado");
   const enCatalogo = producto.meta_estado === "sincronizado";
-  const pendiente = producto.meta_estado === "pendiente" || producto.meta_estado === "enviando";
+  const pendiente = producto.meta_estado === "pendiente";
+  const enviando = producto.meta_estado === "enviando";
 
   const chip = "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none";
   return (
@@ -124,6 +125,11 @@ function Indicadores({ producto }: { producto: Producto }) {
       {pendiente && (
         <span className={`${chip} bg-fondo text-tinta-suave`} title="Todavía no se envió al catálogo de Meta">
           Catálogo pendiente
+        </span>
+      )}
+      {enviando && (
+        <span className={`${chip} bg-acento-suave text-acento`} title="Meta lo está procesando: tarda unos minutos">
+          Enviando al catálogo…
         </span>
       )}
       {publicado("instagram") && (

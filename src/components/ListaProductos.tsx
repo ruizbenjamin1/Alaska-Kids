@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TarjetaProducto from "./TarjetaProducto";
 import type { Producto } from "@/lib/types";
 
@@ -18,6 +19,20 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
   // Copia local para reflejar los cambios al instante (disponible/agotado) sin esperar al servidor
   const [productos, setProductos] = useState(delServidor);
   useEffect(() => setProductos(delServidor), [delServidor]);
+
+  // Mientras haya productos "enviando", se recarga cada 15 s para mostrar cuando Meta los confirma (hasta 10 veces)
+  const router = useRouter();
+  const intentos = useRef(0);
+  const hayEnviando = delServidor.some((p) => p.meta_estado === "enviando");
+  useEffect(() => {
+    if (!hayEnviando || intentos.current >= 10) return;
+    const t = setTimeout(() => {
+      intentos.current++;
+      router.refresh();
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [hayEnviando, delServidor, router]);
+
   const cambiarDisponible = useCallback((id: string, disponible: boolean) => {
     setProductos((lista) => lista.map((p) => (p.id === id ? { ...p, disponible } : p)));
   }, []);
