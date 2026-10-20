@@ -4,12 +4,9 @@ import { actualizarLotes } from "@/lib/catalogo";
 import { listarCuentas, permisosFaltantes, type CuentaRedes } from "@/lib/redes";
 import { cambiarCatalogo, desconectar, elegirCatalogo, elegirPagina } from "./acciones";
 import BotonEnviar from "@/components/BotonEnviar";
-import ImportarCatalogo from "@/components/ImportarCatalogo";
 import { enviarPendientes, guardarAjustes } from "./sincronizar";
 
 export const dynamic = "force-dynamic";
-// Traer productos de otro catálogo baja fotos: puede tardar
-export const maxDuration = 60;
 
 type Conexion = {
   token_cifrado: string;
@@ -414,8 +411,6 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
             </div>
           )}
         </section>
-
-        {conectado && <ImportarCatalogo />}
 
         {/* ───── Datos del negocio ───── */}
         <section className="mt-4 rounded-2xl border border-borde bg-papel p-5">
