@@ -30,8 +30,16 @@ const temas: Tema[] = [
           <li>Completá el <strong>nombre</strong>, la <strong>descripción</strong>, el <strong>precio</strong> y los <strong>talles</strong>.</li>
           <li>Tocá <strong>“Guardar producto”</strong>.</li>
         </Pasos>
-        <p>Al guardar, el producto se manda solo al catálogo de Meta. No hace falta hacer nada más.</p>
+        <p>
+          Al guardar, el producto se manda solo al catálogo de Meta y desde ahí aparece en el <strong>catálogo de WhatsApp</strong>. No hace
+          falta hacer nada más. Guardar <strong>no</strong> lo publica en Instagram ni en Facebook: eso se hace aparte (ver “Publicar en
+          Instagram y Facebook”).
+        </p>
         <Consejo>El precio se escribe solo con números: si ponés 12500 se ve “12.500”. No pongas el signo $.</Consejo>
+        <Consejo>
+          Si cargás el mismo producto con otro precio según el talle, poné el talle en el nombre, por ejemplo “Short Escolar (4 al 8)” y
+          “Short Escolar (8 al 16)”. En el catálogo de WhatsApp primero se ve el nombre, y así los clientes los diferencian.
+        </Consejo>
       </>
     ),
   },
@@ -95,8 +103,9 @@ const temas: Tema[] = [
     contenido: (
       <>
         <ul className="space-y-2">
-          <li><Chip clase="bg-ok-suave text-ok">✓ Catálogo</Chip> Ya está en el catálogo de Meta (Facebook, Instagram y WhatsApp).</li>
-          <li><Chip clase="bg-fondo text-tinta-suave">Catálogo pendiente</Chip> Todavía no se mandó, o se está mandando.</li>
+          <li><Chip clase="bg-ok-suave text-ok">✓ Catálogo</Chip> Ya está en el catálogo de Meta (WhatsApp).</li>
+          <li><Chip clase="bg-acento-suave text-acento">Enviando al catálogo…</Chip> Meta lo está procesando. Tarda unos minutos y la lista se actualiza sola.</li>
+          <li><Chip clase="bg-fondo text-tinta-suave">Catálogo pendiente</Chip> Todavía no se mandó (por ejemplo, si la conexión con Facebook estaba vencida).</li>
           <li><Chip clase="bg-acento-suave text-acento">✓ IG</Chip> <Chip clase="bg-acento-suave text-acento">✓ FB</Chip> Ya se publicó en Instagram o en Facebook.</li>
         </ul>
         <p>Si ves productos pendientes o con error, andá a <Link href="/meta" className="font-medium text-acento hover:underline">Meta</Link> y tocá <strong>“Enviar pendientes”</strong>.</p>
@@ -108,6 +117,11 @@ const temas: Tema[] = [
     titulo: "Publicar en Instagram y Facebook",
     contenido: (
       <>
+        <p>
+          Los productos <strong>no</strong> se publican solos en las redes: solo se publica el que vos elijas, cuando tocás “Publicar”. Sale
+          como una publicación normal en el Instagram <strong>@alaskakidsmayorista</strong> y en la página de Facebook <strong>Alaska Kids
+          Mayorista</strong>.
+        </p>
         <Pasos>
           <li>Entrá al producto y guardá los cambios si tocaste algo.</li>
           <li>Abajo, en <strong>“Publicar en redes”</strong>, revisá el texto. Ya viene armado con el nombre, el precio y los talles, y lo podés cambiar.</li>
@@ -123,13 +137,24 @@ const temas: Tema[] = [
   },
   {
     id: "whatsapp",
-    titulo: "Cómo llegan los clientes a WhatsApp",
+    titulo: "El catálogo de WhatsApp",
     contenido: (
-      <p>
-        Cada producto tiene su propia página pública con las fotos, el precio y un botón <strong>“Consultar por WhatsApp”</strong>. Es la
-        página a la que lleva el catálogo de Meta. El número que usa se cambia en <Link href="/meta" className="font-medium text-acento hover:underline">Meta</Link>, en
-        <strong> “WhatsApp del local”</strong>.
-      </p>
+      <>
+        <p>
+          El catálogo de WhatsApp Business está conectado a la app: muestra los mismos productos, con las mismas fotos, precios y
+          disponibilidad. Todo lo que cargues, cambies, marques agotado o elimines acá se ve en WhatsApp solo. A veces WhatsApp tarda un rato
+          en mostrar los cambios.
+        </p>
+        <Consejo>
+          Cargá y editá los productos siempre desde esta app, no desde el catálogo de WhatsApp. Si los cambiás en WhatsApp, la app no se
+          entera y la próxima vez que guardes el producto acá se pisa lo que hiciste allá.
+        </Consejo>
+        <p>
+          Además, cada producto tiene su propia página pública con las fotos, el precio y un botón <strong>“Consultar por WhatsApp”</strong>.
+          El número que usa se cambia en <Link href="/meta" className="font-medium text-acento hover:underline">Meta</Link>, en
+          <strong> “WhatsApp del local”</strong>.
+        </p>
+      </>
     ),
   },
   {
@@ -152,7 +177,7 @@ const temas: Tema[] = [
       <Pasos>
         <li>En la pantalla de entrar, tocá <strong>“¿Olvidaste tu contraseña?”</strong>.</li>
         <li>Escribí tu email y tocá <strong>“Enviar link”</strong>.</li>
-        <li>Abrí el mail (si no está, mirá en spam) y tocá el link.</li>
+        <li>Abrí el mail (si no está, mirá en spam) y tocá el link. Funciona aunque lo abras en otro aparato, por ejemplo pedirlo desde el iPad y abrirlo en el iPhone.</li>
         <li>Elegí la contraseña nueva, de al menos 8 caracteres, y tocá <strong>“Guardar y entrar”</strong>.</li>
       </Pasos>
     ),
@@ -163,6 +188,7 @@ const temas: Tema[] = [
     contenido: (
       <ul className="list-disc space-y-1.5 pl-5">
         <li><strong>Aparece el filtro “Error en Meta”:</strong> entrá al producto, revisá que tenga foto, nombre y precio, guardá de nuevo y después tocá “Enviar pendientes” en Meta.</li>
+        <li><strong>Un producto no aparece en el catálogo de WhatsApp:</strong> fijate que en la lista diga “✓ Catálogo”. Si ya lo dice, esperá un rato y cerrá y volvé a abrir WhatsApp.</li>
         <li><strong>No deja publicar en redes:</strong> casi siempre es que hay que reconectar con Facebook desde Meta.</li>
         <li><strong>La pantalla no se actualiza:</strong> cerrá la app y abrila de nuevo.</li>
         <li>Si sigue sin andar, sacale una captura a la pantalla y mandásela a Benjamin.</li>
