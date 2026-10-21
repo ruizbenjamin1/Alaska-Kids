@@ -9,6 +9,6 @@ import Panel from "./Panel";
  */
 export default function Marco({ children }: { children: React.ReactNode }) {
   const ruta = usePathname();
-  if (ruta.startsWith("/login") || ruta.startsWith("/p/")) return <>{children}</>;
+  if (ruta.startsWith("/login") || ruta.startsWith("/p/") || ruta.startsWith("/auth/")) return <>{children}</>;
   return <Panel>{children}</Panel>;
 }

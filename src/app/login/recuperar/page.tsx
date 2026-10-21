@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
 export default function RecuperarPage() {
   return (
@@ -24,8 +24,13 @@ function Recuperar() {
     e.preventDefault();
     setCargando(true);
     setError(null);
-    const { error } = await createClient().auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/confirm?next=/login/nueva`,
+    // Cliente "implícito": el link del mail trae la sesión en sí mismo, así funciona aunque se abra
+    // en otro aparato o fuera de la app instalada (con el modo normal solo anda en el mismo navegador)
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, {
+      auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/recuperar`,
     });
     setCargando(false);
     if (error) {
