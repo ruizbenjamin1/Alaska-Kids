@@ -1,5 +1,7 @@
 "use client";
 
+import Fondo from "@/components/FondoMarca";
+import Marca from "@/components/Marca";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -45,8 +47,11 @@ function Recuperar() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-borde bg-papel p-6 shadow-sm">
+    <Fondo>
+      <div className="mb-6 flex justify-center">
+        <Marca tamano="grande" />
+      </div>
+      <div className="w-full max-w-sm rounded-3xl border border-borde bg-papel p-6 shadow-xl shadow-acento/10 sm:p-7">
         <h1 className="text-2xl font-bold tracking-tight">Recuperar contraseña</h1>
 
         {enviado ? (
@@ -92,6 +97,6 @@ function Recuperar() {
           </form>
         )}
       </div>
-    </main>
+    </Fondo>
   );
 }

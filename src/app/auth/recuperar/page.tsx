@@ -1,5 +1,7 @@
 "use client";
 
+import Fondo from "@/components/FondoMarca";
+import Marca from "@/components/Marca";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -31,8 +33,11 @@ export default function LinkRecuperar() {
   }, [router]);
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <div className="w-full max-w-sm rounded-2xl border border-borde bg-papel p-6 text-center shadow-sm">
+    <Fondo>
+      <div className="mb-6 flex justify-center">
+        <Marca tamano="grande" />
+      </div>
+      <div className="w-full max-w-sm rounded-3xl border border-borde bg-papel p-6 shadow-xl shadow-acento/10 sm:p-7 text-center">
         {fallo ? (
           <>
             <h1 className="text-xl font-bold tracking-tight">El link venció</h1>
@@ -47,6 +52,6 @@ export default function LinkRecuperar() {
           </p>
         )}
       </div>
-    </main>
+    </Fondo>
   );
 }

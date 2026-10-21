@@ -3,17 +3,17 @@
 /* Tailwind: dark: se activa con data-theme="dark" (lo pone el botón de tema o el modo del dispositivo) */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* ───────────── Modo claro ───────────── */
+/* ───────────── Modo claro (lila de Alaska Kids) ───────────── */
 :root {
   color-scheme: light;
-  --fondo: #f7f4ef;
+  --fondo: #f7f3fc;
   --papel: #ffffff;
-  --tinta: #1d2733;
-  --tinta-suave: #5e6b78;
-  --borde: #e4ddd2;
-  --acento: #2f5d8a;
-  --acento-hover: #244a6f;
-  --acento-suave: #e6eef6;
+  --tinta: #2a2140;
+  --tinta-suave: #6b6280;
+  --borde: #e6def2;
+  --acento: #6a4cb0;
+  --acento-hover: #573c96;
+  --acento-suave: #efe8fa;
   --sobre-acento: #ffffff; /* texto encima de botones y etiquetas de color */
   --ok: #2f7a4f;
   --ok-suave: #e3f2e9;
@@ -24,15 +24,15 @@
 /* ───────────── Modo oscuro ───────────── */
 [data-theme="dark"] {
   color-scheme: dark;
-  --fondo: #11161c;
-  --papel: #1a2129;
-  --tinta: #e7ecf1;
-  --tinta-suave: #9aa6b2;
-  --borde: #2b3440;
-  --acento: #7eaedf;
-  --acento-hover: #9cc2ea;
-  --acento-suave: #1d2c3c;
-  --sobre-acento: #0d1620;
+  --fondo: #15121c;
+  --papel: #1e1a28;
+  --tinta: #ece8f4;
+  --tinta-suave: #a69fb8;
+  --borde: #312a40;
+  --acento: #b49cf0;
+  --acento-hover: #c7b4f5;
+  --acento-suave: #2a2240;
+  --sobre-acento: #1a1228;
   --ok: #6cc795;
   --ok-suave: #16301f;
   --peligro: #ef8b78;
@@ -53,7 +53,7 @@
   --color-ok-suave: var(--ok-suave);
   --color-peligro: var(--peligro);
   --color-peligro-suave: var(--peligro-suave);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Nunito Variable", ui-rounded, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {

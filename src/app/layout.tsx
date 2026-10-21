@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/nunito";
 import Marco from "@/components/Marco";
 import "./globals.css";
 
@@ -19,8 +20,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f4ef" },
-    { media: "(prefers-color-scheme: dark)", color: "#11161c" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f3fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#15121c" },
   ],
 };
 

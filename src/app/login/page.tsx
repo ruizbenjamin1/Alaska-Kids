@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Fondo from "@/components/FondoMarca";
+import Marca from "@/components/Marca";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -27,12 +29,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
+    <Fondo>
+      <div className="mb-6 flex justify-center">
+        <Marca tamano="grande" />
+      </div>
       <form
         onSubmit={entrar}
-        className="w-full max-w-sm rounded-2xl border border-borde bg-papel p-6 shadow-sm"
+        className="w-full max-w-sm rounded-3xl border border-borde bg-papel p-6 shadow-xl shadow-acento/10 sm:p-7"
       >
-        <h1 className="text-2xl font-bold tracking-tight">Alaska Kids</h1>
+        <h1 className="text-xl font-extrabold tracking-tight">Hola de nuevo</h1>
         <p className="mb-6 mt-1 text-sm text-tinta-suave">Entrá para cargar productos al catálogo.</p>
 
         <label className="etiqueta" htmlFor="email">Email</label>
@@ -70,6 +75,6 @@ export default function LoginPage() {
           {cargando ? "Entrando…" : "Entrar"}
         </button>
       </form>
-    </main>
+    </Fondo>
   );
 }

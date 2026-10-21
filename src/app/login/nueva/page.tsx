@@ -1,5 +1,7 @@
 "use client";
 
+import Fondo from "@/components/FondoMarca";
+import Marca from "@/components/Marca";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -35,8 +37,11 @@ export default function NuevaContrasenaPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <form onSubmit={guardar} className="w-full max-w-sm rounded-2xl border border-borde bg-papel p-6 shadow-sm">
+    <Fondo>
+      <div className="mb-6 flex justify-center">
+        <Marca tamano="grande" />
+      </div>
+      <form onSubmit={guardar} className="w-full max-w-sm rounded-3xl border border-borde bg-papel p-6 shadow-xl shadow-acento/10 sm:p-7">
         <h1 className="text-2xl font-bold tracking-tight">Contraseña nueva</h1>
         <p className="mb-6 mt-1 text-sm text-tinta-suave">Elegí la contraseña que vas a usar para entrar.</p>
 
@@ -73,6 +78,6 @@ export default function NuevaContrasenaPage() {
           {cargando ? "Guardando…" : "Guardar y entrar"}
         </button>
       </form>
-    </main>
+    </Fondo>
   );
 }

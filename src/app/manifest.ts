@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Carga de productos para el catálogo y las redes de Alaska Kids",
     start_url: "/",
     display: "standalone",
-    background_color: "#f7f4ef",
-    theme_color: "#2f5d8a",
+    background_color: "#f7f3fc",
+    theme_color: "#6a4cb0",
     lang: "es-AR",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },
