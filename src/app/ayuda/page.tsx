@@ -136,6 +136,24 @@ const temas: Tema[] = [
     ),
   },
   {
+    id: "difusion",
+    titulo: "Mandar un producto al canal o a una difusión de WhatsApp",
+    contenido: (
+      <>
+        <Pasos>
+          <li>Entrá al producto. Abajo de todo está <strong>“Enviar al canal o difusión de WhatsApp”</strong>, con el mensaje ya armado como lo usan en el canal: nombre, talle y precio. Lo podés cambiar.</li>
+          <li>Tocá <strong>“Enviar por WhatsApp”</strong>. El texto se copia solo y se abre el menú de compartir con la foto.</li>
+          <li>Elegí <strong>WhatsApp Business</strong> y después el canal, la difusión o el grupo.</li>
+          <li>En la pantalla de la foto, tocá <strong>“Añadir un comentario”</strong>, mantené apretado y elegí <strong>Pegar</strong>.</li>
+          <li>Enviá: llega en un solo mensaje, con la foto y el texto abajo.</li>
+        </Pasos>
+        <Consejo>
+          El texto se pega a mano porque, si la app manda la foto y el texto juntos, WhatsApp los separa en dos mensajes.
+        </Consejo>
+      </>
+    ),
+  },
+  {
     id: "whatsapp",
     titulo: "El catálogo de WhatsApp",
     contenido: (

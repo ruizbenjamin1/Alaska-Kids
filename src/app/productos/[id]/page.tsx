@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import BotonEnviar from "@/components/BotonEnviar";
+import CompartirWhatsApp from "@/components/CompartirWhatsApp";
 import FormularioProducto from "@/components/FormularioProducto";
 import PublicarEnRedes, { type Publicacion } from "@/components/PublicarEnRedes";
 import { obtenerContacto } from "@/lib/contacto";
 import { appConfigurada, descifrar } from "@/lib/meta";
 import { permisosFaltantes, textoSugerido } from "@/lib/redes";
 import { createClient } from "@/lib/supabase/server";
-import type { Producto } from "@/lib/types";
+import { urlPublica, type Producto } from "@/lib/types";
 import { duplicarProducto } from "./duplicar";
 
 export const dynamic = "force-dynamic";
@@ -51,8 +52,29 @@ export default async function EditarProducto({ params }: { params: Promise<{ id:
       >
         <SeccionPublicar producto={producto} />
       </Suspense>
+      <CompartirWhatsApp
+        nombre={producto.nombre}
+        textoInicial={textoWhatsApp(producto)}
+        fotoUrl={producto.producto_fotos[0] ? urlPublica(producto.producto_fotos[0].storage_path) : null}
+      />
     </main>
   );
+}
+
+/**
+ * Mensaje para el canal / difusiones de WhatsApp, con el mismo formato que ya usa Alaska en su canal:
+ * Nombre / Talle / $precio. Corto, para que se lea de un vistazo debajo de la foto.
+ */
+function textoWhatsApp(p: Producto) {
+  const precio = "$" + Math.round(Number(p.precio));
+  return [
+    p.nombre.trim(),
+    p.talles ? `Talle: ${p.talles}` : null,
+    `${precio} ✨💜`,
+    p.disponible ? null : "(Agotado por ahora)",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 async function SeccionPublicar({ producto }: { producto: Producto }) {
