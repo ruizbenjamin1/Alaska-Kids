@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import TarjetaProducto from "./TarjetaProducto";
-import type { Producto } from "@/lib/types";
+import { CATEGORIAS, type Categoria, type Producto } from "@/lib/types";
 
 type Filtro = "todos" | "disponibles" | "agotados" | "error";
 type Orden = "nuevos" | "viejos" | "precio-asc" | "precio-desc";
@@ -40,6 +40,13 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [orden, setOrden] = useState<Orden>("nuevos");
+  const [categoria, setCategoria] = useState<Categoria | "todas">("todas");
+
+  const porCategoria = useMemo(() => {
+    const cuenta = Object.fromEntries(CATEGORIAS.map((c) => [c.id, 0])) as Record<Categoria, number>;
+    for (const p of productos) for (const c of p.categorias ?? []) if (c in cuenta) cuenta[c]++;
+    return cuenta;
+  }, [productos]);
 
   const cuentas = useMemo(
     () => ({
@@ -57,8 +64,10 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
       if (filtro === "disponibles" && !p.disponible) return false;
       if (filtro === "agotados" && p.disponible) return false;
       if (filtro === "error" && p.meta_estado !== "error") return false;
+      if (categoria !== "todas" && !(p.categorias ?? []).includes(categoria)) return false;
       if (palabras.length === 0) return true;
-      const texto = normalizar(`${p.nombre} ${p.descripcion} ${p.talles ?? ""}`);
+      const nombresCategorias = CATEGORIAS.filter((c) => p.categorias?.includes(c.id)).map((c) => c.nombre).join(" ");
+      const texto = normalizar(`${p.nombre} ${p.descripcion} ${p.talles ?? ""} ${nombresCategorias}`);
       return palabras.every((w) => texto.includes(w));
     });
     const fecha = (p: Producto) => new Date(p.creado_en).getTime();
@@ -71,7 +80,7 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
             ? Number(a.precio) - Number(b.precio)
             : Number(b.precio) - Number(a.precio),
     );
-  }, [productos, busqueda, filtro, orden]);
+  }, [productos, busqueda, filtro, orden, categoria]);
 
   const opciones: { id: Filtro; nombre: string }[] = [
     { id: "todos", nombre: "Todos" },
@@ -119,7 +128,7 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
           </select>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filtrar productos">
+        <div className="sin-barra flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Filtrar productos">
           {opciones.map((o) => {
             const activo = filtro === o.id;
             return (
@@ -140,6 +149,28 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
             );
           })}
         </div>
+
+        <div className="sin-barra flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filtrar por categoría">
+          {[{ id: "todas" as const, nombre: "Todas las categorías" }, ...CATEGORIAS].map((c) => {
+            const activa = categoria === c.id;
+            const cantidad = c.id === "todas" ? null : porCategoria[c.id];
+            return (
+              <button
+                key={c.id}
+                type="button"
+                aria-pressed={activa}
+                onClick={() => setCategoria(c.id)}
+                className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm transition ${
+                  activa
+                    ? "border-tinta bg-tinta font-medium text-papel"
+                    : "border-borde bg-papel text-tinta-suave hover:text-tinta"
+                }`}
+              >
+                {c.nombre} {cantidad !== null && <span className="opacity-70">{cantidad}</span>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {visibles.length === 0 ? (
@@ -150,6 +181,7 @@ export default function ListaProductos({ productos: delServidor }: { productos: 
             onClick={() => {
               setBusqueda("");
               setFiltro("todos");
+              setCategoria("todas");
             }}
             className="mt-2 text-sm font-medium text-acento hover:underline"
           >

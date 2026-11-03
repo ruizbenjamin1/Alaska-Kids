@@ -21,7 +21,7 @@ export default async function Inicio() {
 
   const { data, error } = await supabase
     .from("productos")
-    .select("id, nombre, descripcion, precio, talles, disponible, meta_estado, creado_en, producto_fotos(id, storage_path, orden), publicaciones(red, estado)")
+    .select("id, nombre, descripcion, precio, talles, disponible, categorias, meta_estado, creado_en, producto_fotos(id, storage_path, orden), publicaciones(red, estado)")
     .order("creado_en", { ascending: false })
     .order("orden", { referencedTable: "producto_fotos", ascending: true });
 

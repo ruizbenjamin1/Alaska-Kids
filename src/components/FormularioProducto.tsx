@@ -16,7 +16,7 @@ import imageCompression from "browser-image-compression";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { BUCKET, formatearEntradaPrecio, parsearPrecio, urlPublica, type Producto } from "@/lib/types";
+import { BUCKET, CATEGORIAS, formatearEntradaPrecio, parsearPrecio, urlPublica, type Categoria, type Producto } from "@/lib/types";
 import { enviarProductos, quitarDeMeta } from "@/app/meta/sincronizar";
 import { PREFIJO_FLYER, esFlyer, generarFlyer, type Contacto } from "@/lib/flyer";
 
@@ -66,6 +66,11 @@ export default function FormularioProducto({ producto, contacto }: { producto?: 
   );
   const [talles, setTalles] = useState(producto?.talles ?? "");
   const [disponible, setDisponible] = useState(producto?.disponible ?? true);
+  const [categorias, setCategorias] = useState<Categoria[]>(producto?.categorias ?? []);
+
+  function alternarCategoria(id: Categoria) {
+    setCategorias((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  }
 
   const [generando, setGenerando] = useState(false);
   /** Con qué datos se generó el flyer en esta pantalla (para avisar si después cambian) */
@@ -190,6 +195,8 @@ export default function FormularioProducto({ producto, contacto }: { producto?: 
       precio: precioNum,
       talles: talles.trim() || null,
       disponible,
+      // Siempre en el orden de la lista, para que se vean prolijas
+      categorias: CATEGORIAS.map((c) => c.id).filter((id) => categorias.includes(id)),
     };
     const subidas: string[] = [];
     let productoId = producto?.id;
@@ -484,6 +491,34 @@ export default function FormularioProducto({ producto, contacto }: { producto?: 
             />
           </div>
         </div>
+
+        <fieldset>
+          <legend className="etiqueta">
+            Categorías <span className="font-normal text-tinta-suave">(podés elegir más de una)</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORIAS.map((c) => {
+              const activa = categorias.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={activa}
+                  onClick={() => alternarCategoria(c.id)}
+                  disabled={guardando}
+                  className={`rounded-full border px-3.5 py-1.5 text-sm transition ${
+                    activa
+                      ? "border-acento bg-acento-suave font-medium text-acento"
+                      : "border-borde bg-fondo text-tinta-suave hover:text-tinta"
+                  }`}
+                >
+                  {activa && <span aria-hidden>✓ </span>}
+                  {c.nombre}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
 
         <label className="flex cursor-pointer items-center justify-between rounded-xl bg-fondo px-3.5 py-3">
           <span>

@@ -81,8 +81,42 @@ body {
     @apply inline-flex items-center justify-center gap-2 rounded-xl border border-borde bg-papel px-4 py-2.5 text-sm font-medium text-tinta transition hover:bg-fondo active:scale-[0.98] disabled:opacity-60;
   }
 
+  /* Bloque gris con un brillo que pasa, para los skeletons mientras carga */
+  .esqueleto {
+    @apply relative overflow-hidden rounded-lg bg-borde/60;
+  }
+  .esqueleto::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--papel) 55%, transparent), transparent);
+    animation: brillo 1.4s ease-in-out infinite;
+  }
+
+  /* Fila que se desliza de costado sin mostrar la barra (los filtros en la compu) */
+  .sin-barra {
+    scrollbar-width: none;
+  }
+  .sin-barra::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Ruedita de "cargando" para botones */
   .girando {
     @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent;
+  }
+}
+
+@keyframes brillo {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Si el aparato pide menos movimiento, el skeleton queda quieto */
+@media (prefers-reduced-motion: reduce) {
+  .esqueleto::after {
+    animation: none;
   }
 }

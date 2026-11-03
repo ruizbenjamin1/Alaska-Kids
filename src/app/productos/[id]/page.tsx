@@ -21,7 +21,7 @@ export default async function EditarProducto({ params }: { params: Promise<{ id:
   const contactoPromesa = obtenerContacto();
   const { data } = await supabase
     .from("productos")
-    .select("id, nombre, descripcion, precio, talles, disponible, meta_estado, creado_en, producto_fotos(id, storage_path, orden)")
+    .select("id, nombre, descripcion, precio, talles, disponible, categorias, meta_estado, creado_en, producto_fotos(id, storage_path, orden)")
     .eq("id", id)
     .order("orden", { referencedTable: "producto_fotos", ascending: true })
     .maybeSingle();

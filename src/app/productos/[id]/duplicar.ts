@@ -15,7 +15,7 @@ export async function duplicarProducto(formData: FormData) {
 
   const { data: original } = await supabase
     .from("productos")
-    .select("nombre, descripcion, precio, talles, disponible, producto_fotos(storage_path, orden)")
+    .select("nombre, descripcion, precio, talles, disponible, categorias, producto_fotos(storage_path, orden)")
     .eq("id", id)
     .maybeSingle();
   if (!original) redirect("/");
@@ -29,6 +29,7 @@ export async function duplicarProducto(formData: FormData) {
       precio: original.precio,
       talles: original.talles,
       disponible: original.disponible,
+      categorias: original.categorias,
     })
     .select("id")
     .single();

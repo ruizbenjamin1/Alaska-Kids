@@ -17,6 +17,8 @@ export default function TarjetaProducto({
 }) {
   const router = useRouter();
   const [guardando, setGuardando] = useState(false);
+  // La foto aparece suave cuando termina de bajar; mientras tanto se ve el brillo del skeleton
+  const [fotoLista, setFotoLista] = useState(false);
   const disponible = producto.disponible;
 
   const portada = producto.producto_fotos[0];
@@ -47,13 +49,24 @@ export default function TarjetaProducto({
       <Link href={`/productos/${producto.id}`} className="block">
         <div className="relative aspect-square bg-fondo">
           {portada ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={urlPublica(portada.storage_path)}
-              alt={producto.nombre}
-              loading="lazy"
-              className={`h-full w-full object-cover ${disponible ? "" : "opacity-40 grayscale"}`}
-            />
+            <>
+              {!fotoLista && <div className="esqueleto absolute inset-0 rounded-none" aria-hidden />}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                // Si la foto ya estaba en caché, puede terminar antes de que React escuche onLoad
+                ref={(img) => {
+                  if (img?.complete && img.naturalWidth > 0) setFotoLista(true);
+                }}
+                src={urlPublica(portada.storage_path)}
+                alt={producto.nombre}
+                loading="lazy"
+                onLoad={() => setFotoLista(true)}
+                onError={() => setFotoLista(true)}
+                className={`h-full w-full object-cover transition-opacity duration-300 ${
+                  !fotoLista ? "opacity-0" : disponible ? "" : "opacity-40 grayscale"
+                }`}
+              />
+            </>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-tinta-suave">Sin foto</div>
           )}

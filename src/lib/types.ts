@@ -4,6 +4,17 @@ export type Foto = {
   orden: number;
 };
 
+/** Categorías fijas del negocio (las mismas que permite la base de datos, en el mismo orden en que se muestran). */
+export const CATEGORIAS = [
+  { id: "accesorios", nombre: "Accesorios" },
+  { id: "bebes", nombre: "Bebés" },
+  { id: "ninos", nombre: "Niño/a" },
+  { id: "adolescentes", nombre: "Adolescente" },
+  { id: "novedades", nombre: "Novedades" },
+] as const;
+
+export type Categoria = (typeof CATEGORIAS)[number]["id"];
+
 export type Producto = {
   id: string;
   nombre: string;
@@ -11,6 +22,7 @@ export type Producto = {
   precio: number;
   talles: string | null;
   disponible: boolean;
+  categorias: Categoria[];
   meta_estado: "pendiente" | "enviando" | "sincronizado" | "error";
   creado_en: string;
   producto_fotos: Foto[];
