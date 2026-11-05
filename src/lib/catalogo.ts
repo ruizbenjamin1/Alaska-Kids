@@ -40,10 +40,9 @@ export function aItemDeMeta(p: ProductoMeta, marca: string) {
     image_link: fotos[0],
     ...(fotos.length > 1 ? { additional_image_link: fotos.slice(1, 11) } : {}),
     brand: marca,
-    // Las categorías van como claves separadas por coma ("bebes,novedades").
-    // Cada colección de WhatsApp filtra por "product_type contiene <clave>" (ver armarColecciones).
-    // Ninguna clave está contenida dentro de otra, así que el filtro no se confunde.
-    product_type: (p.categorias ?? []).join(","),
+    // Las categorías van como claves separadas por espacio ("bebes novedades").
+    // Cada colección de WhatsApp filtra por "product_type contiene la palabra <clave>" (ver armarColecciones).
+    product_type: (p.categorias ?? []).join(" "),
   };
 }
 
@@ -52,7 +51,14 @@ export function aItemDeMeta(p: ProductoMeta, marca: string) {
 type ConjuntoMeta = { id: string; name: string };
 
 function filtroDeCategoria(id: Categoria) {
-  return JSON.stringify({ product_type: { i_contains: id } });
+  // "contains" compara palabras completas (Meta ya no acepta i_contains en los conjuntos)
+  return JSON.stringify({ product_type: { contains: id } });
+}
+
+/** Mensaje de error de Meta con el detalle que suele venir en error_user_msg. */
+function mensajeMeta(json: { error?: { message?: string; error_user_title?: string; error_user_msg?: string } }, status: number) {
+  const e = json?.error;
+  return [e?.message, e?.error_user_title, e?.error_user_msg].filter(Boolean).join(" · ") || `Meta respondió ${status}`;
 }
 
 async function postGraph(ruta: string, token: string, params: Record<string, string>) {
@@ -62,7 +68,7 @@ async function postGraph(ruta: string, token: string, params: Record<string, str
     signal: AbortSignal.timeout(15000),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error?.message ?? `Meta respondió ${res.status}`);
+  if (!res.ok) throw new Error(mensajeMeta(json, res.status));
   return json as { id?: string };
 }
 
@@ -78,22 +84,29 @@ export async function armarColecciones(conexion: { token: string; catalogoId: st
   url.searchParams.set("access_token", conexion.token);
   const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json?.error?.message ?? `Meta respondió ${res.status}`);
+  if (!res.ok) throw new Error(`Al leer los conjuntos: ${mensajeMeta(json, res.status)}`);
   const existentes = (json.data ?? []) as ConjuntoMeta[];
 
   let creadas = 0;
   let actualizadas = 0;
+  const errores: string[] = [];
   for (const c of CATEGORIAS) {
     const filter = filtroDeCategoria(c.id);
     const actual = existentes.find((e) => e.name.trim().toLowerCase() === c.nombre.toLowerCase());
-    if (actual) {
-      await postGraph(actual.id, conexion.token, { filter });
-      actualizadas++;
-    } else {
-      await postGraph(`${conexion.catalogoId}/product_sets`, conexion.token, { name: c.nombre, filter });
-      creadas++;
+    try {
+      if (actual) {
+        await postGraph(actual.id, conexion.token, { filter });
+        actualizadas++;
+      } else {
+        await postGraph(`${conexion.catalogoId}/product_sets`, conexion.token, { name: c.nombre, filter });
+        creadas++;
+      }
+    } catch (e) {
+      // Se sigue con las demás y al final se avisa cuál falló y por qué
+      errores.push(`${c.nombre} (${actual ? "actualizar" : "crear"}): ${e instanceof Error ? e.message : e}`);
     }
   }
+  if (errores.length) throw new Error(errores.join(" | "));
   return { creadas, actualizadas };
 }
 
