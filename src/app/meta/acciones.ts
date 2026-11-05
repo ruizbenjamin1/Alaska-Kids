@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { armarColecciones } from "@/lib/catalogo";
 import { GRAPH, buscarCatalogo, descifrar, listarCatalogos } from "@/lib/meta";
 import { listarCuentas } from "@/lib/redes";
 import { createClient } from "@/lib/supabase/server";
@@ -40,6 +41,8 @@ export async function elegirCatalogo(formData: FormData) {
       negocio_nombre: elegido.negocioNombre,
     })
     .eq("id", 1);
+  // Una colección por categoría en el catálogo nuevo. Si falla, se puede repetir con "Actualizar colecciones".
+  await armarColecciones({ token, catalogoId: elegido.id }).catch(() => null);
   revalidatePath("/meta");
 }
 

@@ -4,7 +4,8 @@ import { actualizarLotes } from "@/lib/catalogo";
 import { listarCuentas, permisosFaltantes, type CuentaRedes } from "@/lib/redes";
 import { cambiarCatalogo, desconectar, elegirCatalogo, elegirPagina } from "./acciones";
 import BotonEnviar from "@/components/BotonEnviar";
-import { enviarPendientes, guardarAjustes } from "./sincronizar";
+import { enviarPendientes, guardarAjustes, sincronizarColecciones } from "./sincronizar";
+import { CATEGORIAS } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,12 @@ type Conexion = {
 
 const fecha = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "long", year: "numeric" });
 
-export default async function MetaPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-  const { error: errorUrl } = await searchParams;
+export default async function MetaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; aviso?: string }>;
+}) {
+  const { error: errorUrl, aviso } = await searchParams;
   const supabase = await createClient();
 
   const { data: conexion } = await supabase.from("meta_conexion").select("*").eq("id", 1).maybeSingle<Conexion>();
@@ -85,6 +90,9 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
 
         {errorUrl && (
           <p className="mb-4 rounded-lg bg-peligro-suave px-3 py-2 text-sm text-peligro">{errorUrl}</p>
+        )}
+        {aviso && !errorUrl && (
+          <p className="mb-4 rounded-lg bg-fondo px-3 py-2 text-sm text-ok">{aviso}</p>
         )}
 
         <section className="rounded-2xl border border-borde bg-papel p-5">
@@ -393,6 +401,20 @@ export default async function MetaPage({ searchParams }: { searchParams: Promise
             <form action={enviarPendientes} className="mt-4">
               <BotonEnviar textoCargando="Enviando…">Enviar pendientes ({cuenta.pendiente + cuenta.error})</BotonEnviar>
             </form>
+          )}
+
+          {conectado && (
+            <div className="mt-5 border-t border-borde pt-4">
+              <h3 className="text-sm font-semibold">Colecciones de WhatsApp</h3>
+              <p className="mt-1 text-xs text-tinta-suave">
+                En el catálogo hay una colección por categoría ({CATEGORIAS.map((c) => c.nombre).join(", ")}). Cada
+                producto aparece en las colecciones de las categorías que tenga marcadas, y se actualiza solo al
+                guardarlo. Usá este botón si faltan colecciones o si los productos viejos no aparecen en ninguna.
+              </p>
+              <form action={sincronizarColecciones} className="mt-3">
+                <BotonEnviar textoCargando="Actualizando…">Actualizar colecciones</BotonEnviar>
+              </form>
+            </div>
           )}
 
           {(conError ?? []).length > 0 && (

@@ -1,6 +1,6 @@
 import "server-only";
 import { GRAPH, descifrar } from "@/lib/meta";
-import { urlPublica } from "@/lib/types";
+import { CATEGORIAS, urlPublica, type Categoria } from "@/lib/types";
 import type { createClient } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -19,6 +19,7 @@ export type ProductoMeta = {
   precio: number;
   talles: string | null;
   disponible: boolean;
+  categorias: Categoria[] | null;
   producto_fotos: { storage_path: string; orden: number }[];
 };
 
@@ -39,7 +40,61 @@ export function aItemDeMeta(p: ProductoMeta, marca: string) {
     image_link: fotos[0],
     ...(fotos.length > 1 ? { additional_image_link: fotos.slice(1, 11) } : {}),
     brand: marca,
+    // Las categorías van como claves separadas por coma ("bebes,novedades").
+    // Cada colección de WhatsApp filtra por "product_type contiene <clave>" (ver armarColecciones).
+    // Ninguna clave está contenida dentro de otra, así que el filtro no se confunde.
+    product_type: (p.categorias ?? []).join(","),
   };
+}
+
+// ───────────── Colecciones (conjuntos de productos) ─────────────
+
+type ConjuntoMeta = { id: string; name: string };
+
+function filtroDeCategoria(id: Categoria) {
+  return JSON.stringify({ product_type: { i_contains: id } });
+}
+
+async function postGraph(ruta: string, token: string, params: Record<string, string>) {
+  const res = await fetch(`${GRAPH}/${ruta}`, {
+    method: "POST",
+    body: new URLSearchParams({ ...params, access_token: token }),
+    signal: AbortSignal.timeout(15000),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message ?? `Meta respondió ${res.status}`);
+  return json as { id?: string };
+}
+
+/**
+ * Crea en el catálogo un conjunto de productos por cada categoría (WhatsApp los muestra como colecciones).
+ * Cada conjunto es un filtro: los productos entran y salen solos según su categoría, sin tocar nada más.
+ * Se puede llamar las veces que sea: si el conjunto ya existe (mismo nombre), solo le actualiza el filtro.
+ */
+export async function armarColecciones(conexion: { token: string; catalogoId: string }) {
+  const url = new URL(`${GRAPH}/${conexion.catalogoId}/product_sets`);
+  url.searchParams.set("fields", "id,name");
+  url.searchParams.set("limit", "200");
+  url.searchParams.set("access_token", conexion.token);
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json?.error?.message ?? `Meta respondió ${res.status}`);
+  const existentes = (json.data ?? []) as ConjuntoMeta[];
+
+  let creadas = 0;
+  let actualizadas = 0;
+  for (const c of CATEGORIAS) {
+    const filter = filtroDeCategoria(c.id);
+    const actual = existentes.find((e) => e.name.trim().toLowerCase() === c.nombre.toLowerCase());
+    if (actual) {
+      await postGraph(actual.id, conexion.token, { filter });
+      actualizadas++;
+    } else {
+      await postGraph(`${conexion.catalogoId}/product_sets`, conexion.token, { name: c.nombre, filter });
+      creadas++;
+    }
+  }
+  return { creadas, actualizadas };
 }
 
 /** Token y catálogo, si la conexión está completa. */

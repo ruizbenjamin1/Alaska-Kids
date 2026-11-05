@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { aItemDeMeta, conexionLista, enviarLote, type ProductoMeta } from "@/lib/catalogo";
+import { aItemDeMeta, armarColecciones, conexionLista, enviarLote, type ProductoMeta } from "@/lib/catalogo";
 import { createClient } from "@/lib/supabase/server";
 
 export type ResultadoEnvio = { ok: boolean; mensaje: string };
@@ -19,7 +19,7 @@ export async function enviarProductos(ids?: string[]): Promise<ResultadoEnvio> {
 
   let consulta = supabase
     .from("productos")
-    .select("id, nombre, descripcion, precio, talles, disponible, producto_fotos(storage_path, orden)");
+    .select("id, nombre, descripcion, precio, talles, disponible, categorias, producto_fotos(storage_path, orden)");
   consulta = ids?.length ? consulta.in("id", ids) : consulta.in("meta_estado", ["pendiente", "error"]);
   const { data, error } = await consulta;
   if (error) return { ok: false, mensaje: error.message };
@@ -55,6 +55,32 @@ export async function enviarProductos(ids?: string[]): Promise<ResultadoEnvio> {
 /** Botón "Enviar pendientes" de la pantalla Meta. */
 export async function enviarPendientes() {
   await enviarProductos();
+}
+
+/**
+ * Botón "Actualizar colecciones" de la pantalla Meta:
+ * crea (o corrige) una colección por categoría en el catálogo y reenvía todos los productos
+ * para que Meta tenga la categoría de cada uno (los cargados antes de este cambio no la tenían).
+ */
+export async function sincronizarColecciones() {
+  const supabase = await createClient();
+  const conexion = await conexionLista(supabase).catch(() => null);
+  if (!conexion) redirect("/meta?error=" + encodeURIComponent("Primero conectá Meta y elegí el catálogo."));
+
+  let resumen: string;
+  try {
+    const { creadas, actualizadas } = await armarColecciones(conexion);
+    resumen = `Colecciones listas (${creadas} nueva(s), ${actualizadas} actualizada(s)).`;
+  } catch (e) {
+    const motivo = e instanceof Error ? e.message : "";
+    redirect("/meta?error=" + encodeURIComponent(`No se pudieron crear las colecciones en Meta. ${motivo}`));
+  }
+
+  const { data } = await supabase.from("productos").select("id");
+  const ids = (data ?? []).map((p) => p.id as string);
+  const envio = ids.length ? await enviarProductos(ids) : { ok: true, mensaje: "" };
+  if (!envio.ok) redirect("/meta?error=" + encodeURIComponent(`${resumen} Pero falló el reenvío: ${envio.mensaje}`));
+  redirect("/meta?aviso=" + encodeURIComponent(`${resumen} ${envio.mensaje}`.trim()));
 }
 
 /** Borra un producto del catálogo de Meta (se llama antes de eliminarlo de la app). */

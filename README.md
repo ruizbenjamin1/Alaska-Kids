@@ -24,7 +24,8 @@ La usa Nicole desde el iPhone, el iPad y la compu, instalada como app web.
 - Conexión con Facebook Login for Business. El token de larga duración (unos 60 días) se guarda cifrado con AES-256-GCM.
 - Envío al catálogo por lotes (`items_batch`). La app revisa sola el resultado del lote y la lista se recarga mientras haya productos enviándose.
 - Publicación en Instagram (foto o carrusel) y en la página de Facebook, con historial por producto.
-- Pantalla **Meta**: estado de la conexión y su vencimiento, elección de catálogo y de página, conteo de productos, "Enviar pendientes" y los datos del negocio (WhatsApp, marca).
+- Pantalla **Meta**: estado de la conexión y su vencimiento, elección de catálogo y de página, conteo de productos, "Enviar pendientes", "Actualizar colecciones" y los datos del negocio (WhatsApp, marca).
+- **Colecciones de WhatsApp:** cada categoría (Accesorios, Bebés, Niño/a, Adolescente, Novedades) es un conjunto de productos en el catálogo, filtrado por `product_type`. Los productos entran y salen solos de cada colección según las categorías marcadas. Los conjuntos se crean al elegir el catálogo, o con "Actualizar colecciones".
 
 **Cuenta y uso**
 - Login con email y contraseña, y "¿Olvidaste tu contraseña?". El link del mail funciona aunque se abra en otro aparato.
@@ -41,7 +42,7 @@ La usa Nicole desde el iPhone, el iPad y la compu, instalada como app web.
 
 ## Puesta en marcha
 
-1. **Supabase.** Corré las migraciones de `supabase/migrations/` en orden (`0001` a `0004`).
+1. **Supabase.** Corré las migraciones de `supabase/migrations/` en orden (`0001` a `0006`).
 2. **Auth en Supabase:**
    - En Sign In / Providers, apagá "Allow new users to sign up". Las cuentas se crean a mano en Authentication → Users.
    - En URL Configuration, poné como **Site URL** la dirección de producción y agregá en **Redirect URLs** `https://<tu-dominio>/**` y `http://localhost:3000/**`.
@@ -75,6 +76,8 @@ supabase/migrations/
   0002_meta_conexion.sql    conexión con Meta (token cifrado, catálogo, negocio)
   0003_envio_meta.sql       estado "enviando", lotes y ajustes (WhatsApp, marca)
   0004_publicaciones.sql    página e Instagram elegidos e historial de publicaciones
+  0005_categorias.sql       categorías de cada producto
+  0006_categorias_meta.sql  cambiar categorías también deja el producto "pendiente"
 
 src/app/
   page.tsx                  lista de productos (revisa los lotes enviados a Meta)
@@ -91,7 +94,7 @@ src/app/
 src/components/             formulario, lista, tarjeta, publicar en redes, menú, marca
 src/lib/
   meta.ts                   Graph API, permisos, cifrado del token
-  catalogo.ts               armado de items, envío y revisión de lotes
+  catalogo.ts               armado de items, envío y revisión de lotes, colecciones
   redes.ts                  publicación en Instagram y Facebook
   flyer.ts                  generación de la imagen con precio (canvas)
   contacto.ts               datos de contacto para el flyer
