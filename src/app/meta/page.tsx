@@ -1,6 +1,6 @@
 import { appConfigurada, descifrar, diagnostico, graph, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
-import { actualizarLotes } from "@/lib/catalogo";
+import { actualizarLotes, conjuntoDe, listarConjuntos } from "@/lib/catalogo";
 import { listarCuentas, permisosFaltantes, type CuentaRedes } from "@/lib/redes";
 import { cambiarCatalogo, desconectar, elegirCatalogo, elegirPagina } from "./acciones";
 import BotonEnviar from "@/components/BotonEnviar";
@@ -43,6 +43,7 @@ export default async function MetaPage({
   // Todas las consultas a Meta van en paralelo (antes iban una detrás de otra y la pantalla tardaba)
   let faltanPublicar: string[] | null = null;
   let cuentas: CuentaRedes[] = [];
+  let conjuntos: Awaited<ReturnType<typeof listarConjuntos>> | null = null;
   if (conexion && appOk) {
     try {
       token = descifrar(conexion.token_cifrado);
@@ -59,6 +60,8 @@ export default async function MetaPage({
         // Revisa cómo terminaron los envíos anteriores antes de contar
         catalogoId ? actualizarLotes(supabase, { token: t, catalogoId }).catch(() => null) : null,
       ]);
+      // Después de revisar los lotes (que pueden haber creado colecciones), se ve cuáles existen
+      if (catalogoId) conjuntos = await listarConjuntos({ token: t, catalogoId }).catch(() => null);
       if ("enMeta" in estadoCatalogo) enMeta = estadoCatalogo.enMeta;
       else ({ diag, catalogos } = estadoCatalogo);
       faltanPublicar = faltan;
@@ -409,8 +412,26 @@ export default async function MetaPage({
               <p className="mt-1 text-xs text-tinta-suave">
                 En el catálogo hay una colección por categoría ({CATEGORIAS.map((c) => c.nombre).join(", ")}). Cada
                 producto aparece en las colecciones de las categorías que tenga marcadas, y se actualiza solo al
-                guardarlo. Usá este botón si faltan colecciones o si los productos viejos no aparecen en ninguna.
+                guardarlo. Meta no deja crear colecciones vacías: la de una categoría se crea sola cuando tiene su
+                primer producto. Usá este botón si faltan colecciones o si los productos viejos no aparecen en ninguna.
               </p>
+              {conjuntos && (
+                <ul className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {CATEGORIAS.map((c) => {
+                    const existe = Boolean(conjuntoDe(conjuntos!, c.nombre));
+                    return (
+                      <li
+                        key={c.id}
+                        className={`rounded-full px-3 py-1 ${existe ? "bg-fondo text-ok" : "bg-fondo text-tinta-suave"}`}
+                      >
+                        {existe ? "✓ " : ""}
+                        {c.nombre}
+                        {existe ? "" : " · todavía no"}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
               <form action={sincronizarColecciones} className="mt-3">
                 <BotonEnviar textoCargando="Actualizando…">Actualizar colecciones</BotonEnviar>
               </form>

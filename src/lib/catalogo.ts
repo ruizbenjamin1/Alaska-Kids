@@ -72,12 +72,8 @@ async function postGraph(ruta: string, token: string, params: Record<string, str
   return json as { id?: string };
 }
 
-/**
- * Crea en el catálogo un conjunto de productos por cada categoría (WhatsApp los muestra como colecciones).
- * Cada conjunto es un filtro: los productos entran y salen solos según su categoría, sin tocar nada más.
- * Se puede llamar las veces que sea: si el conjunto ya existe (mismo nombre), solo le actualiza el filtro.
- */
-export async function armarColecciones(conexion: { token: string; catalogoId: string }) {
+/** Conjuntos de productos que ya existen en el catálogo. */
+export async function listarConjuntos(conexion: { token: string; catalogoId: string }) {
   const url = new URL(`${GRAPH}/${conexion.catalogoId}/product_sets`);
   url.searchParams.set("fields", "id,name");
   url.searchParams.set("limit", "200");
@@ -85,14 +81,37 @@ export async function armarColecciones(conexion: { token: string; catalogoId: st
   const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(10000) });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(`Al leer los conjuntos: ${mensajeMeta(json, res.status)}`);
-  const existentes = (json.data ?? []) as ConjuntoMeta[];
+  return (json.data ?? []) as ConjuntoMeta[];
+}
+
+/** Busca el conjunto de una categoría por su nombre (sin importar mayúsculas). */
+export function conjuntoDe(existentes: ConjuntoMeta[], nombre: string) {
+  return existentes.find((e) => e.name.trim().toLowerCase() === nombre.toLowerCase());
+}
+
+/**
+ * Crea en el catálogo un conjunto de productos por cada categoría (WhatsApp los muestra como colecciones).
+ * Cada conjunto es un filtro: los productos entran y salen solos según su categoría, sin tocar nada más.
+ *
+ * Meta no deja crear conjuntos vacíos, así que solo se crean los de las categorías que ya tienen
+ * algún producto en Meta (`conProductos`). Las demás se crean solas más adelante, cuando Meta termina
+ * de procesar un lote (ver actualizarLotes). Se puede llamar las veces que sea: si el conjunto ya existe,
+ * solo le actualiza el filtro.
+ */
+export async function armarColecciones(conexion: { token: string; catalogoId: string }, conProductos: Set<string>) {
+  const existentes = await listarConjuntos(conexion);
 
   let creadas = 0;
   let actualizadas = 0;
+  const sinProductos: string[] = [];
   const errores: string[] = [];
   for (const c of CATEGORIAS) {
+    if (!conProductos.has(c.id)) {
+      if (!conjuntoDe(existentes, c.nombre)) sinProductos.push(c.nombre);
+      continue;
+    }
     const filter = filtroDeCategoria(c.id);
-    const actual = existentes.find((e) => e.name.trim().toLowerCase() === c.nombre.toLowerCase());
+    const actual = conjuntoDe(existentes, c.nombre);
     try {
       if (actual) {
         await postGraph(actual.id, conexion.token, { filter });
@@ -107,7 +126,21 @@ export async function armarColecciones(conexion: { token: string; catalogoId: st
     }
   }
   if (errores.length) throw new Error(errores.join(" | "));
-  return { creadas, actualizadas };
+  return { creadas, actualizadas, sinProductos };
+}
+
+/** Categorías que tienen al menos un producto ya procesado por Meta (con su categoría cargada). */
+export async function categoriasEnMeta(supabase: Supabase) {
+  const { data } = await supabase.from("productos").select("categorias").eq("meta_estado", "sincronizado");
+  return new Set((data ?? []).flatMap((p) => (p.categorias ?? []) as string[]));
+}
+
+/** Arma las colecciones de las categorías que ya tienen productos en Meta. */
+export async function armarColeccionesSegunProductos(
+  supabase: Supabase,
+  conexion: { token: string; catalogoId: string },
+) {
+  return armarColecciones(conexion, await categoriasEnMeta(supabase));
 }
 
 /** Token y catálogo, si la conexión está completa. */
@@ -167,6 +200,7 @@ export async function actualizarLotes(supabase: Supabase, conexion: { token: str
     lotes.set(p.meta_lote, [...(lotes.get(p.meta_lote) ?? []), p.id]);
   }
 
+  let algunoTermino = false;
   for (const [handle, ids] of lotes) {
     let estado: EstadoLote;
     try {
@@ -175,6 +209,7 @@ export async function actualizarLotes(supabase: Supabase, conexion: { token: str
       continue; // se vuelve a intentar la próxima vez
     }
     if (!estado.terminado) continue;
+    algunoTermino = true;
 
     // Solo se tocan los que siguen "enviando" con ese lote (si alguien los editó mientras tanto, quedan pendientes)
     const sinId = estado.errores.some((e) => !e.id);
@@ -203,4 +238,7 @@ export async function actualizarLotes(supabase: Supabase, conexion: { token: str
       .eq("meta_lote", handle)
       .eq("meta_estado", "enviando");
   }
+
+  // Si Meta terminó algún lote, puede que ahora haya categorías con productos: se crean sus colecciones.
+  if (algunoTermino) await armarColeccionesSegunProductos(supabase, conexion).catch(() => null);
 }
