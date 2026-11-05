@@ -121,6 +121,12 @@ export async function armarColecciones(conexion: { token: string; catalogoId: st
         creadas++;
       }
     } catch (e) {
+      const mensaje = e instanceof Error ? e.message : String(e);
+      // Meta todavía no ve productos con esa categoría (por ejemplo, el lote no terminó): se reintenta más adelante
+      if (!actual && /vac[ií]o|empty/i.test(mensaje)) {
+        sinProductos.push(c.nombre);
+        continue;
+      }
       // Se sigue con las demás y al final se avisa cuál falló y por qué
       errores.push(`${c.nombre} (${actual ? "actualizar" : "crear"}): ${e instanceof Error ? e.message : e}`);
     }

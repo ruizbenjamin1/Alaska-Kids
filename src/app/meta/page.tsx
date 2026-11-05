@@ -1,6 +1,6 @@
 import { appConfigurada, descifrar, diagnostico, graph, listarCatalogos } from "@/lib/meta";
 import { createClient } from "@/lib/supabase/server";
-import { actualizarLotes, conjuntoDe, listarConjuntos } from "@/lib/catalogo";
+import { actualizarLotes, armarColeccionesSegunProductos, conjuntoDe, listarConjuntos } from "@/lib/catalogo";
 import { listarCuentas, permisosFaltantes, type CuentaRedes } from "@/lib/redes";
 import { cambiarCatalogo, desconectar, elegirCatalogo, elegirPagina } from "./acciones";
 import BotonEnviar from "@/components/BotonEnviar";
@@ -61,7 +61,15 @@ export default async function MetaPage({
         catalogoId ? actualizarLotes(supabase, { token: t, catalogoId }).catch(() => null) : null,
       ]);
       // Después de revisar los lotes (que pueden haber creado colecciones), se ve cuáles existen
-      if (catalogoId) conjuntos = await listarConjuntos({ token: t, catalogoId }).catch(() => null);
+      if (catalogoId) {
+        const cx = { token: t, catalogoId };
+        conjuntos = await listarConjuntos(cx).catch(() => null);
+        // Si falta alguna, se reintenta (Meta puede tardar en ver la categoría de los productos ya enviados)
+        if (conjuntos && CATEGORIAS.some((c) => !conjuntoDe(conjuntos!, c.nombre))) {
+          const r = await armarColeccionesSegunProductos(supabase, cx).catch(() => null);
+          if (r && r.creadas > 0) conjuntos = await listarConjuntos(cx).catch(() => conjuntos);
+        }
+      }
       if ("enMeta" in estadoCatalogo) enMeta = estadoCatalogo.enMeta;
       else ({ diag, catalogos } = estadoCatalogo);
       faltanPublicar = faltan;
